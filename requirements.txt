@@ -1,0 +1,7 @@
+pandas
+#sklearn
+jupyter
+matplotlib
+#pyanno3
+#wxPython
+seaborn
