@@ -1,4 +1,5 @@
 import numpy as np
+from .data import Data
 
 def compute_counts(m, I, J):
     n = np.zeros((I, J))
@@ -34,6 +35,18 @@ def probabilistic_consensus(m, I, J, softening=0.1):
 def compute_probabilistic_consensus(d, question, softening=0.1):
     m, I, J = get_question_matrix_and_ranges(d, question)
     return probabilistic_consensus(m, I, J, softening)
+
+
+class Abstract_Cosensus:
+    """ Base class for a consensus algorithm."""
+    def compute_consensus(self, d:Data, question, **kwargs):
+        """Computes consensus for question question from Data d.
+        returns consensus, model parameters""" 
+        raise NotImplementedError
+        
+    def compute_crossed_error(self, d, question, T, **kwargs):
+        """ """
+        raise NotImplementedError
 
 class Dawid_Skene:
     def __init__(self):
@@ -79,8 +92,16 @@ class Dawid_Skene:
         else:
             print("The maximum of", max_iterations, "iterations has been reached")
         return self.p, np.exp(self.logpi), self.T
+    
+    def compute_crossed_error(self, d, question, T, prior=0.0):
+        m = d.get_question_matrix(question)
+        self.I = d.n_tasks
+        self.J = d.n_labels(question)
+        self.K = d.n_annotators
+        n = self.compute_n(m)
+        return np.exp(self.m_step_logpi(T, n, prior))
 
-    def compute_n(self, m):
+    def _compute_n(self, m):
 
         # print(m)
         #N = m.shape[0]
@@ -94,34 +115,26 @@ class Dawid_Skene:
             n[k, i, j] += 1
         return n
 
-    def m_step_p(self, T, prior):
+    def _m_step_p(self, T, prior):
         p = np.sum(T, axis=0)
         p += prior
         p /= np.sum(p)
         return p
 
-    def m_step_logpi(self, T, n, prior):
+    def _m_step_logpi(self, T, n, prior):
         _pi = np.swapaxes(np.dot(T.transpose(), n), 0, 1)
         _pi += prior
         sums = np.sum(_pi, axis=2)
         _pi /= sums[:, :, np.newaxis]
         return np.log(_pi)
 
-    def e_step(self, n, logpi, p):
+    def _e_step(self, n, logpi, p):
         T = np.exp(np.tensordot(n, logpi, axes=([0, 2], [0, 2])))  # IxJ
         T *= p[np.newaxis, :]
         T /= np.sum(T, axis=1)[:, np.newaxis]
             # Potential numerical error here.
             # Plan for using smthg similar to the logsumexp trick in the future
         return T
-
-    def compute_crossed_error(self, d, question, T, prior=0.0):
-        m = d.get_question_matrix(question)
-        self.I = d.n_tasks
-        self.J = d.n_labels(question)
-        self.K = d.n_annotators
-        n = self.compute_n(m)
-        return np.exp(self.m_step_logpi(T, n, prior))
 
     def sample(self, p, _pi, I, num_annotators):
         # TODO: Consider using pyAgrum

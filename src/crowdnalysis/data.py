@@ -2,8 +2,67 @@ import pandas as pd
 import numpy as np
 
 class Data:
+    """
+    This is the main class for storing answers
+    - by a set of annotators, 
+    - to a set of tasks, 
+    - each task with the very same questions.
+    """
     def __init__(self):
+        """
+        The Data object must not be initialized by constructor. 
+        Instead, use the from methods
+        """ 
         pass
+
+    def from_df(df, task_id_col_name="task_id", annotator_id_col_name="annotator_id", 
+                questions=None, task_ids=None, categories=None):
+        """ 
+        Create a Data object from dataframe df.
+        The dataframe contains one row for each annotation, 
+        each row has a task_id, an annotator id and the answers to a set of 
+        questions, each answer in one column
+        """
+        d = Data()
+
+        if questions is None:
+            questions = list(df.columns)
+            questions.remove(task_id_col_name)
+            questions.remove(annotator_id_col_name)
+
+        d.set_questions(questions)
+
+        df = df.copy()
+
+        np_task_ids = df[task_id_col_name].to_numpy()
+        if task_ids is None:
+            task_ids = np.unique(np_task_ids)
+        #t = np.unique(np_task_ids)
+        #print(t==task_ids)
+        d.set_task_ids(task_ids)
+        inverse = np.vectorize(d.task_index_from_id.get)(np_task_ids)
+        df["task_index"] = inverse
+
+        #print(df[annotator_id_col_name].to_numpy())
+        annotator_ids, inverse = np.unique(df[annotator_id_col_name].to_numpy(), return_inverse=True)
+        d.set_annotator_ids(annotator_ids)
+        df["annotator_index"] = inverse
+
+        d.set_df(df, categories)
+
+        return d
+
+    def from_pybossa(file_name, questions, preprocess=lambda x:x, task_ids=None, categories=None):
+        """ 
+        Create a Data object from a pybossa file.
+        """
+        df = pd.read_csv(file_name)
+        columns_to_retain = ["task_id", "user_id"] + questions
+        df = preprocess(df)
+        df = df[columns_to_retain]
+        #print(df)
+
+        return from_df(df, annotator_id_col_name="user_id", task_ids=task_ids, categories=categories)
 
     def set_questions(self, questions):
         self.questions = questions
@@ -42,51 +101,10 @@ class Data:
     def get_categories(self):
         categories = {}
         for q in self.questions:
-            print(self.df[q].cat)
-            print(type(self.df[q].cat))
-            print(self.df[q].dtype)
+            #print(self.df[q].cat)
+            #print(type(self.df[q].cat))
+            #print(self.df[q].dtype)
             categories[q] = self.df[q].dtype
         return categories
 
-# The dataframe contains one row for each annotation, each row has a task_id, an annotator id and the answer
-# to a set of questions, each in one column
-
-def from_df(df, task_id_col_name="task_id", annotator_id_col_name="annotator_id", questions=None, task_ids=None, categories=None):
-    d = Data()
-
-    if questions is None:
-        questions = list(df.columns)
-        questions.remove(task_id_col_name)
-        questions.remove(annotator_id_col_name)
-
-    d.set_questions(questions)
-
-    df = df.copy()
-
-    np_task_ids = df[task_id_col_name].to_numpy()
-    if task_ids is None:
-        task_ids = np.unique(np_task_ids)
-    #t = np.unique(np_task_ids)
-    #print(t==task_ids)
-    d.set_task_ids(task_ids)
-    inverse = np.vectorize(d.task_index_from_id.get)(np_task_ids)
-    df["task_index"] = inverse
-
-    #print(df[annotator_id_col_name].to_numpy())
-    annotator_ids, inverse = np.unique(df[annotator_id_col_name].to_numpy(), return_inverse=True)
-    d.set_annotator_ids(annotator_ids)
-    df["annotator_index"] = inverse
-
-    d.set_df(df, categories)
-
-    return d
-
-
-def from_pybossa(file_name, questions, preprocess=lambda x:x, task_ids=None, categories=None):
-    df = pd.read_csv(file_name)
-    columns_to_retain = ["task_id", "user_id"] + questions
-    df = preprocess(df)
-    df = df[columns_to_retain]
-    #print(df)
-
-    return from_df(df, annotator_id_col_name="user_id", task_ids=task_ids, categories=categories)
+    
