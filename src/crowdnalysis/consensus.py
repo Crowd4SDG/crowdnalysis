@@ -1,45 +1,26 @@
 import numpy as np
 from .data import Data
 
-def compute_counts(m, I, J):
-    n = np.zeros((I, J))
-    for i, k, j in m:
-        n[i, j] += 1
-    return n
-    # print(n)
 
-def majority_voting(m, I, J):
-    n = compute_counts(m, I, J)
-    # print(n)
-    best_count = np.amax(n, axis=1)
-    num_best_candidates = np.sum((n==best_count[:, np.newaxis]), axis=1)
-    best = np.argmax(n, axis=1)
-    best[num_best_candidates != 1] = -1
-    return best
-
-def get_question_matrix_and_ranges(d, question):
-    m = d.get_question_matrix(question)
-    I = d.n_tasks
-    J = d.n_labels(question)
-    return m, I, J
-
-def compute_majority_voting(d, question):
-    m, I, J = get_question_matrix_and_ranges(d, question)
-    return majority_voting(m, I, J)
-
-def probabilistic_consensus(m, I, J, softening=0.1):
-    n = compute_counts(m, I, J)
-    n += softening
-    return n / np.sum(n, axis=1)[:, np.newaxis]
-
-def compute_probabilistic_consensus(d, question, softening=0.1):
-    m, I, J = get_question_matrix_and_ranges(d, question)
-    return probabilistic_consensus(m, I, J, softening)
-
-
-class Abstract_Cosensus:
+class AbstractConsensus:
     """ Base class for a consensus algorithm."""
-    def compute_consensus(self, d:Data, question, **kwargs):
+
+    @staticmethod
+    def compute_counts(m, I, J):
+        n = np.zeros((I, J))
+        for i, k, j in m:
+            n[i, j] += 1
+        return n
+        # print(n)
+
+    @staticmethod
+    def _get_question_matrix_and_ranges(d, question):
+        m = d.get_question_matrix(question)
+        I = d.n_tasks
+        J = d.n_labels(question)
+        return m, I, J
+
+    def compute_consensus(self, d: Data, question, **kwargs):
         """Computes consensus for question question from Data d.
         returns consensus, model parameters""" 
         raise NotImplementedError
@@ -48,9 +29,52 @@ class Abstract_Cosensus:
         """ """
         raise NotImplementedError
 
-class Dawid_Skene:
+
+class MajorityVoting(AbstractConsensus):
     def __init__(self):
         pass
+
+    @classmethod
+    def majority_voting(cls, m, I, J):
+        n = cls.compute_counts(m, I, J)
+        # print(n)
+        best_count = np.amax(n, axis=1)
+        num_best_candidates = np.sum((n == best_count[:, np.newaxis]), axis=1)
+        best = np.argmax(n, axis=1)
+        best[num_best_candidates != 1] = -1
+        return best
+
+    # TODO (OM, 20201012): Could be a classmethod
+    def compute_consensus(self, d: Data, question):
+        m, I, J = self._get_question_matrix_and_ranges(d, question)
+        return self.majority_voting(m, I, J)
+
+
+class Probabilistic(AbstractConsensus):
+    def __init__(self):
+        pass
+
+    @classmethod
+    def _probabilistic_consensus(cls, m, I, J, softening=0.1):
+        n = cls.compute_counts(m, I, J)
+        n += softening
+        return n / np.sum(n, axis=1)[:, np.newaxis]
+
+    # TODO (OM, 20201012): Could be a classmethod
+    def compute_consensus(self, d: Data, question, softening=0.1):
+        m, I, J = self._get_question_matrix_and_ranges(d, question)
+        return self._probabilistic_consensus(m, I, J, softening)
+
+
+class DawidSkene(AbstractConsensus):
+    def __init__(self):
+        self.I = None
+        self.J = None
+        self.K = None
+        self.n = None
+        self.T = None
+        self.p = None
+        self.logpi = None
 
     def compute_consensus(self, d, question, max_iterations=10000, tolerance=1e-7, prior=0.0):
         m = d.get_question_matrix(question)
@@ -58,18 +82,18 @@ class Dawid_Skene:
         self.J = d.n_labels(question)
         self.K = d.n_annotators
 
-        self.n = self.compute_n(m)
+        self.n = self._compute_n(m)
         # First estimate of T_{i,j} is done by probabilistic consensus
-        self.T = compute_probabilistic_consensus(d, question, softening=prior)
+        self.T = Probabilistic().compute_consensus(d, question, softening=prior)
 
         # Initialize the percentages of each label
-        self.p = self.m_step_p(self.T, prior)
+        self.p = self._m_step_p(self.T, prior)
 
         #print("p=", self.p)
 
         # Initialize the errors
         # _pi[k,j,l] (KxJxJ)
-        self.logpi = self.m_step_logpi(self.T, self.n, prior)
+        self.logpi = self._m_step_logpi(self.T, self.n, prior)
         #self.logpi = np.log(self.pi)
 
         #print("pi=", np.exp(self.logpi))
@@ -79,11 +103,11 @@ class Dawid_Skene:
         while num_iterations < max_iterations and not has_converged:
             # Expectation step
             old_T = self.T
-            self.T = self.e_step(self.n, self.logpi, self.p)
+            self.T = self._e_step(self.n, self.logpi, self.p)
             # Maximization
-            self.p = self.m_step_p(self.T, prior)
+            self.p = self._m_step_p(self.T, prior)
             #print("p=", self.p)
-            self.logpi = self.m_step_logpi(self.T, self.n, prior)
+            self.logpi = self._m_step_logpi(self.T, self.n, prior)
             #print("pi=", np.exp(self.logpi))
             has_converged = np.allclose(old_T, self.T, atol=tolerance)
             num_iterations += 1
@@ -98,8 +122,8 @@ class Dawid_Skene:
         self.I = d.n_tasks
         self.J = d.n_labels(question)
         self.K = d.n_annotators
-        n = self.compute_n(m)
-        return np.exp(self.m_step_logpi(T, n, prior))
+        n = self._compute_n(m)
+        return np.exp(self._m_step_logpi(T, n, prior))
 
     def _compute_n(self, m):
 
@@ -193,7 +217,7 @@ class Dawid_Skene:
     def majority_success_rate(self, p, _pi, I, K):
         real_labels, crowd_labels = self.fast_sample(p, _pi, I, K)
         # print(crowd_labels)
-        c = majority_voting(crowd_labels, I, len(p))
+        c = MajorityVoting.majority_voting(crowd_labels, I, len(p))
         num_successes = np.sum(real_labels == c)
         return num_successes / I
 
@@ -220,11 +244,12 @@ class Dawid_Skene:
         self.I = I
         self.J = len(p)
         self.K = _pi.shape[0]
-        n = self.compute_n(labels)
+        n = self._compute_n(labels)
         logpi = np.log(_pi)
-        prob_consensus = self.e_step(n, logpi, p)
+        prob_consensus = self._e_step(n, logpi, p)
         consensus = np.argmax(prob_consensus, axis=1)
         return prob_consensus, consensus
+
 
 def prob_consensus(a, alpha=0.01, response=2):
     c = a.copy()
@@ -268,7 +293,8 @@ def prob_consensus(a, alpha=0.01, response=2):
             q[c[i_tr, 0], :] *= P[c[i_tr, response]]
         sums = np.sum(q ,axis=1)
         q /= sums[:, np.newaxis]
-        # print(q[:5,:]) B=0
+        # print(q[:5,:])
+        B=0
         for i_tr in range(N):
             B += 1-q[c[i_tr , 0], c[i_tr, response]]
         alpha = B/(N*(k-1) )

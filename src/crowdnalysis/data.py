@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 class Data:
     """
     This is the main class for storing answers
@@ -12,10 +13,19 @@ class Data:
         """
         The Data object must not be initialized by constructor. 
         Instead, use the from methods
-        """ 
-        pass
+        """
+        # Make instance attributes' definitions explicit
+        self.df = None
+        self.questions = None
+        self.task_ids = None
+        self.task_index_from_id = None
+        self.n_tasks = None
+        self.annotator_ids = None
+        self.annotator_index_from_id = None
+        self.n_annotators = None
 
-    def from_df(df, task_id_col_name="task_id", annotator_id_col_name="annotator_id", 
+    @classmethod
+    def from_df(cls, df, task_id_col_name="task_id", annotator_id_col_name="annotator_id",
                 questions=None, task_ids=None, categories=None):
         """ 
         Create a Data object from dataframe df.
@@ -52,7 +62,8 @@ class Data:
 
         return d
 
-    def from_pybossa(file_name, questions, preprocess=lambda x:x, task_ids=None, categories=None):
+    @classmethod
+    def from_pybossa(cls, file_name, questions, preprocess=lambda x:x, task_ids=None, categories=None):
         """ 
         Create a Data object from a pybossa file.
         """
@@ -62,7 +73,7 @@ class Data:
         df = df[columns_to_retain]
         #print(df)
 
-        return from_df(df, annotator_id_col_name="user_id", task_ids=task_ids, categories=categories)
+        return cls.from_df(df, annotator_id_col_name="user_id", task_ids=task_ids, categories=categories)
 
     def set_questions(self, questions):
         self.questions = questions
@@ -106,5 +117,3 @@ class Data:
             #print(self.df[q].dtype)
             categories[q] = self.df[q].dtype
         return categories
-
-    
