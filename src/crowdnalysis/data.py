@@ -75,6 +75,12 @@ class Data:
 
         return cls.from_df(df, annotator_id_col_name="user_id", task_ids=task_ids, categories=categories)
 
+    @classmethod
+    def from_mturk(cls, file_name, questions, preprocess=lambda x:x, task_ids=None, categories=None):
+        """Create a Data object from an amazon mturk file."""
+        return cls.from_pybossa(file_name, questions, preprocess, task_ids, categories)
+
+
     def set_questions(self, questions):
         self.questions = questions
 

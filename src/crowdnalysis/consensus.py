@@ -78,16 +78,19 @@ class DawidSkene(AbstractConsensus):
 
     def compute_consensus(self, d, question, max_iterations=10000, tolerance=1e-7, prior=0.0):
         m = d.get_question_matrix(question)
-        self.I = d.n_tasks
+        # print("DS get_question_matrix:\n", m)
+        self.I = d. n_tasks
         self.J = d.n_labels(question)
         self.K = d.n_annotators
 
         self.n = self._compute_n(m)
         # First estimate of T_{i,j} is done by probabilistic consensus
         self.T = Probabilistic().compute_consensus(d, question, softening=prior)
+        # print("First estimate of T ({}) by probabilistic consensus:\n".format(str(self.T.shape)), self.T)
 
         # Initialize the percentages of each label
         self.p = self._m_step_p(self.T, prior)
+        # print("Initial percentages ({}) of each label:\n".format(str(self.p.shape)), self.p)
 
         #print("p=", self.p)
 
@@ -95,6 +98,7 @@ class DawidSkene(AbstractConsensus):
         # _pi[k,j,l] (KxJxJ)
         self.logpi = self._m_step_logpi(self.T, self.n, prior)
         #self.logpi = np.log(self.pi)
+        # print("Initial errors ({}):\n".format(str(np.exp(self.logpi).shape)), np.exp(self.logpi))
 
         #print("pi=", np.exp(self.logpi))
 
@@ -115,6 +119,7 @@ class DawidSkene(AbstractConsensus):
             print("DS has converged in", num_iterations, "iterations")
         else:
             print("The maximum of", max_iterations, "iterations has been reached")
+        # print("\np:\n{}, \npi:\n{},\nT:\n{}".format(self.p, np.exp(self.logpi), self.T))
         return self.p, np.exp(self.logpi), self.T
     
     def compute_crossed_error(self, d, question, T, prior=0.0):
