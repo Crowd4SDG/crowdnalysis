@@ -9,17 +9,17 @@ class Factory:
     algorithms = {}
 
     @classmethod
-    def get_consensus_algorithm(cls, name, **kwargs):
-        """Return an instance of the corresponding consensus algorithm class
+    def get_consensus_algorithm(cls, name):
+        """Return the corresponding consensus algorithm class
 
         Args:
             name (str):
 
         Returns:
-            AbstractConsensus:
+            Type(AbstractConsensus):
 
         """
-        return cls.algorithms[name](**kwargs)
+        return cls.algorithms[name]
 
     @classmethod
     def register_consensus_algorithm(cls, algorithm):
