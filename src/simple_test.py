@@ -123,15 +123,15 @@ class PyBossaData(CitSciDataEarthquake):
     def get_data(self, questions, preprocess=None, task_ids=None, categories=None):
         # print("Reading task run data from {}".format(os.path.join(self.data_dir, self.task_run_file)))
         d = Data.from_pybossa(os.path.join(self.data_dir, self.task_run_file),
-                                                questions=questions,
-                                                preprocess=preprocess if preprocess else self.preprocess,
-                                                task_ids=task_ids,
-                                                categories=categories)
+                              questions=questions,
+                              preprocess=preprocess if preprocess else self.preprocess,
+                              task_ids=task_ids,
+                              categories=categories)
         return d
 
 
-def _run_consensus(d: Data, q: str, algorithm_name):
-    alg = Factory.get_consensus_algorithm(algorithm_name)
+def _run_consensus(d: Data, q: str, algorithm_name, **kwargs):
+    alg = Factory.get_consensus_algorithm(algorithm_name)(**kwargs)
     consensus, params = alg.compute_consensus(d, q)
     return consensus, params
 

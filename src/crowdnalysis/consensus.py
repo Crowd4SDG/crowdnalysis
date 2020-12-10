@@ -24,7 +24,8 @@ class AbstractConsensus:
 
     def compute_consensus(self, d: Data, question):
         """Computes consensus for question question from Data d.
-        returns consensus, model parameters""" 
+        returns consensus, model parameters"""
+        # TODO (OM, 20201210): A return class for model parameters instead of dictionary
         raise NotImplementedError
 
     def success_rate(self, real_labels, crowd_labels):

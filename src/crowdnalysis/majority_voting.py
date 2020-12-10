@@ -40,7 +40,7 @@ class MajorityVoting(consensus.AbstractConsensus):
 
     @classmethod
     def success_rate_with_fixed_parameters(cls, p, _pi, I, K):
-        from dawid_skene import DawidSkene
+        from .dawid_skene import DawidSkene
         DS = DawidSkene()
         # TODO (OM, 20201207): Using DawidSkene inside MajorityVoting to access DS.fast_sample()??
         real_labels, crowd_labels = DS.fast_sample(p=p, _pi=_pi, I=I, num_annotators=K)
@@ -48,7 +48,7 @@ class MajorityVoting(consensus.AbstractConsensus):
 
     @classmethod
     def success_rates(cls, p, _pi, I, annotators):
-        from dawid_skene import DawidSkene
+        from .dawid_skene import DawidSkene
         success_p = np.zeros(len(annotators))
         DS = DawidSkene()
         # TODO (OM, 20201207): Using DawidSkene inside MajorityVoting to access DS.fast_sample()??

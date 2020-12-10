@@ -76,19 +76,19 @@ class StanDSOptimizeConsensus(AbstractStanOptimizeConsensus):
         return stan_data, init_data, args
 
 
-""" Same thing for the hierarchical DS model"""
-class StanHDSOptimizeConsensus(AbstractStanOptimizeConsensus):
-
-    name = "StanHDSOptimize"
-
-    def __init__(self):
-         super().__init__(stan_model_filename=HDS_STAN_PATH)
-    
-    def map_data_to_model(m, I, J, K):
-        # TODO: Modify the line below to work properly with m, I, J, and K whatsoever
-        stan_data = {'J': newK, 'K': newJ, 'N': newN,'I': newI,'ii': newii,'jj': newjj,'y': newyy, 'alpha':np.array([1,1])}
-        # TODO: Modify the line below to define init_beta correctly for any m, I, J and K.
-        init_beta = 0
-        init_data = {"beta": init_beta}
-        args = {"iter":2000}
-        return stan_data, init_data, args
+# class StanHDSOptimizeConsensus(AbstractStanOptimizeConsensus):
+#     """ Hierarchical DS model"""
+#
+#     name = "StanHDSOptimize"
+#
+#     def __init__(self):
+#          super().__init__(stan_model_filename=HDS_STAN_PATH)
+#
+#     def map_data_to_model(m, I, J, K):
+#         # TODO: Modify the line below to work properly with m, I, J, and K whatsoever
+#         stan_data = {'J': newK, 'K': newJ, 'N': newN,'I': newI,'ii': newii,'jj': newjj,'y': newyy, 'alpha':np.array([1,1])}
+#         # TODO: Modify the line below to define init_beta correctly for any m, I, J and K.
+#         init_beta = 0
+#         init_data = {"beta": init_beta}
+#         args = {"iter":2000}
+#         return stan_data, init_data, args
