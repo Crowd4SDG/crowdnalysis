@@ -1,7 +1,11 @@
-import consensus
+import numpy as np
+
+from . import consensus
+from .data import Data
+
 
 class Probabilistic(consensus.AbstractConsensus):
-    name = "Probabilisitic"
+    name = "Probabilistic"
     
     def __init__(self):
         pass
@@ -12,7 +16,7 @@ class Probabilistic(consensus.AbstractConsensus):
         n += softening
         consensus = n / np.sum(n, axis=1)[:, np.newaxis]
         # print("Probabilistic._probabilistic_consensus ({}) -> \n".format(consensus.shape), consensus)
-        return consensus, {"softening":softening}
+        return consensus, {"softening": softening}
 
     def compute_consensus(self, d: Data, question, softening=0.1):
         m, I, J, K = self._get_question_matrix_and_ranges(d, question)

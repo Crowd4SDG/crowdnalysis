@@ -5,3 +5,5 @@ matplotlib
 #pyanno3
 #wxPython
 seaborn
+pystan
+

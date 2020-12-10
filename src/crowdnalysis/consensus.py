@@ -1,8 +1,6 @@
 import numpy as np
-
-from typing import List, Tuple
-
 from .data import Data
+
 
 class AbstractConsensus:
     """ Base class for a consensus algorithm."""
@@ -33,25 +31,5 @@ class AbstractConsensus:
         """"""
         raise NotImplementedError
 
-class Factory:
-    algorithms = {}
-    @staticmethod
-    def getConsensusAlgorithm(name):
-        return algorithms[name]
-        
-    def registerConsensusAlgorithm(algorithm):
-        algorithms[algorithm.name] = algorithm
-
-import majority_voting
-import probabilistic
-import dawid_skene
-import stan
-
-Factory.registerConsensusAlgorithm(majority_voting.MajorityVoting)
-Factory.registerConsensusAlgorithm(probabilistic.Probabilistic)
-Factory.registerConsensusAlgorithm(dawid_skene.DawidSkene)
-Factory.registerConsensusAlgorithm(stan.StanOptimizeConsensus)
-Factory.registerConsensusAlgorithm(stan.StanDSOptimizeConsensus)
-#Factory.registerConsensusAlgorithm(stan.StanDSSampleConsensus)
 
 

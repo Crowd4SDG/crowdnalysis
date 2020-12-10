@@ -1,5 +1,9 @@
-import consensus
-     
+import numpy as np
+
+from . import consensus
+from .data import Data
+
+
 class MajorityVoting(consensus.AbstractConsensus):
     name = "MajorityVoting"
   
@@ -15,6 +19,7 @@ class MajorityVoting(consensus.AbstractConsensus):
         best = np.argmax(n, axis=1)
         best[num_best_candidates != 1] = -1
         # print("MajorityVoting.majority_voting ({}) -> \n".format(best.shape), best)
+        # TODO (OM, 20201210): Return a probability distribution as the first value taking into account draws and best as the second...
         return best, None
 
     @classmethod
@@ -35,6 +40,7 @@ class MajorityVoting(consensus.AbstractConsensus):
 
     @classmethod
     def success_rate_with_fixed_parameters(cls, p, _pi, I, K):
+        from dawid_skene import DawidSkene
         DS = DawidSkene()
         # TODO (OM, 20201207): Using DawidSkene inside MajorityVoting to access DS.fast_sample()??
         real_labels, crowd_labels = DS.fast_sample(p=p, _pi=_pi, I=I, num_annotators=K)
@@ -42,6 +48,7 @@ class MajorityVoting(consensus.AbstractConsensus):
 
     @classmethod
     def success_rates(cls, p, _pi, I, annotators):
+        from dawid_skene import DawidSkene
         success_p = np.zeros(len(annotators))
         DS = DawidSkene()
         # TODO (OM, 20201207): Using DawidSkene inside MajorityVoting to access DS.fast_sample()??
