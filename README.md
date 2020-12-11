@@ -9,9 +9,9 @@
 
 # How to use as a package
 - Clone the repo 
-- Add the directory to the `PYTHONPATH`
+- Add the directory to `PYTHONPATH`
 - `pip install` the requirements into the virtual environment that you will use `crowdnalysis`
-- `ìmport crowdnalysis`
+- `import crowdnalysis`
 
 *see* `albania-analysis` [repo](https://github.com/Crowd4SDG/albania-analysis) for a sample usage 
 and its initialization script (`bin/init-local.sh`) for the above-mentioned configuration. 
