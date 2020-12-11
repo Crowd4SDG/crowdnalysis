@@ -18,8 +18,14 @@ class Factory:
         Returns:
             Type(AbstractConsensus):
 
+        Raises:
+            KeyError: If the algorithm is not registered.
         """
-        return cls.algorithms[name]
+        try:
+            return cls.algorithms[name]
+        except KeyError:
+            raise KeyError("{} algorithm is not registered. "
+                           "Available options are {}.".format(name, list(cls.algorithms.keys())))
 
     @classmethod
     def register_consensus_algorithm(cls, algorithm):
