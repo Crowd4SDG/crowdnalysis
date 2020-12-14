@@ -15,12 +15,13 @@ class MajorityVoting(consensus.AbstractConsensus):
         n = cls.compute_counts(m, I, J)
         # print(n)
         best_count = np.amax(n, axis=1)
-        num_best_candidates = np.sum((n == best_count[:, np.newaxis]), axis=1)
+        bool_best_candidates = (n == best_count[:, np.newaxis])  # A cell is True if the label is a/the best candidate
+        num_best_candidates = np.sum(bool_best_candidates, axis=1)
         best = np.argmax(n, axis=1)
-        best[num_best_candidates != 1] = -1
-        # print("MajorityVoting.majority_voting ({}) -> \n".format(best.shape), best)
-        # TODO (OM, 20201210): Return a probability distribution as the first value taking into account draws and best as the second...
-        return best, None
+        best[num_best_candidates != 1] = -1  #
+        consensus = bool_best_candidates / (num_best_candidates[:, np.newaxis])  # give probability distribution when num_best_candidates > 1
+        # print("MajorityVoting.majority_voting consensus ({}) -> \n{}\nbest ({}) -> \n{}".format(consensus.shape, consensus, best.shape, best))
+        return consensus, best
 
     @classmethod
     def compute_consensus(cls, d: Data, question):
@@ -33,9 +34,9 @@ class MajorityVoting(consensus.AbstractConsensus):
         # TODO (OM, 20201203): Had to pass J as an arg since MajorityVoting needs it
         I = real_labels.shape[0]  # number of tasks
         # print("majority_success_rate > crowd_labels ({}):\n".format(crowd_labels.shape), crowd_labels)
-        consensus = cls.majority_voting(crowd_labels, I, J)
+        _, best = cls.majority_voting(crowd_labels, I, J)
         # print("majority_success_rate > majority_voting ({}):\n".format(c.shape), c)
-        num_successes = np.sum(real_labels == consensus)
+        num_successes = np.sum(real_labels == best)
         return num_successes / I
 
     @classmethod
