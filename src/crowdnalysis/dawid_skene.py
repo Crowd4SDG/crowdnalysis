@@ -18,7 +18,7 @@ class DawidSkene(consensus.AbstractConsensus):
         self.p = None
         self.logpi = None
 
-    def compute_consensus(self, d, question, max_iterations=10000, tolerance=1e-7, prior=1.0):
+    def fit_and_compute_consensus(self, d, question, max_iterations=10000, tolerance=1e-7, prior=1.0):
         m, self.I, self.J, self.K = self._get_question_matrix_and_ranges(d, question)
         #m = d.get_question_matrix(question)
         # print("DS get_question_matrix('{}') {}:\n".format(question, m.shape), m)
