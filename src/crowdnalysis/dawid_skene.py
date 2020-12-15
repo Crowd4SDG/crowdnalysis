@@ -29,7 +29,7 @@ class DawidSkene(consensus.AbstractConsensus):
         self.n = self._compute_n(m)
         # ("n:\n{}", self.n)
         # First estimate of T_{i,j} is done by probabilistic consensus
-        self.T, _ = Probabilistic().compute_consensus(d, question, softening=prior)
+        self.T, _ = Probabilistic().fit_and_compute_consensus(d, question, softening=prior)
         # print("First estimate of T ({}) by probabilistic consensus:\n".format(str(self.T.shape)), self.T)
 
         # Initialize the percentages of each label
