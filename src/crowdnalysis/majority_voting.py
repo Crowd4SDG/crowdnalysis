@@ -24,7 +24,7 @@ class MajorityVoting(consensus.AbstractConsensus):
         return consensus, best
 
     @classmethod
-    def compute_consensus(cls, d: Data, question):
+    def fit_and_compute_consensus(cls, d: Data, question):
         m, I, J, K = cls._get_question_matrix_and_ranges(d, question)
         # print("MajorityVoting > question_matrix ({}) -> \n".format(m.shape), m)
         return cls.majority_voting(m, I, J)

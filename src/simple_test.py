@@ -132,7 +132,7 @@ class PyBossaData(CitSciDataEarthquake):
 
 def _run_consensus(d: Data, q: str, algorithm_name, **kwargs):
     alg = Factory.get_consensus_algorithm(algorithm_name)(**kwargs)
-    consensus, params = alg.compute_consensus(d, q)
+    consensus, params = alg.fit_and_compute_consensus(d, q)
     return consensus, params
 
 

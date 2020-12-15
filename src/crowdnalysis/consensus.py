@@ -29,13 +29,13 @@ class AbstractConsensus:
         # TODO (OM, 20201210): A return class for model parameters instead of dictionary
         raise NotImplementedError
 
-    def fit(self, d, question, reference_consensus):
+    def fit(self, d: Data, question, reference_consensus):
         """ Fits the model parameters provided that the consensus is already known.
         This is useful to determine the errors of a different set of annotators than the
         ones that were used to determine the consensus.
 
         returns parameters """
-    def compute_consensus(self, d, question, parameters):
+    def compute_consensus(self, d:Data, question, parameters):
         """ Computes the consensus with a fixed pre-determined set of parameters.
 
         returns consensus """

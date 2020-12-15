@@ -18,6 +18,6 @@ class Probabilistic(consensus.AbstractConsensus):
         # print("Probabilistic._probabilistic_consensus ({}) -> \n".format(consensus.shape), consensus)
         return consensus, {"softening": softening}
 
-    def compute_consensus(self, d: Data, question, softening=0.1):
+    def fit_and_compute_consensus(self, d: Data, question, softening=0.1):
         m, I, J, K = self._get_question_matrix_and_ranges(d, question)
         return self._probabilistic_consensus(m, I, J, softening)
