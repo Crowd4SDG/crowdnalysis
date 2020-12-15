@@ -76,7 +76,7 @@ class AbstractStanOptimizeConsensus(consensus.AbstractConsensus):
         results = self.stan_model.optimizing(data=stan_data, init=init_data, **kwargs)
         
         # Here you should obtain the consensus (the q's) from Stan and also return the additional parameters.
-        return results["pi"], kwargs
+        return results["q_z"], kwargs
 
     #def success_rate(self, real_labels, crowd_labels):
     #    Apply this model to the crowd_labels and compare against the real_labels
@@ -124,6 +124,7 @@ class StanDSOptimizeConsensus(AbstractStanOptimizeConsensus):
         init_data = {"beta": init_beta}
         args = {"iter":2000}
         return stan_data, init_data, args
+
 
 
 # class StanHDSOptimizeConsensus(AbstractStanOptimizeConsensus):
