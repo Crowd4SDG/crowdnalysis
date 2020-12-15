@@ -3,6 +3,7 @@ import numpy as np
 from . import consensus
 from .data import Data
 from .probabilistic import Probabilistic
+from .majority_voting import MajorityVoting
 
 
 class DawidSkene(consensus.AbstractConsensus):

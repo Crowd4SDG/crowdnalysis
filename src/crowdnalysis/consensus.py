@@ -15,7 +15,7 @@ class AbstractConsensus:
         # print(n)
 
     @staticmethod
-    def _get_question_matrix_and_ranges(d, question):
+    def get_question_matrix_and_ranges(d, question):
         m = d.get_question_matrix(question)
         I = d.n_tasks
         J = d.n_labels(question)

@@ -55,6 +55,6 @@ class MajorityVoting(consensus.AbstractConsensus):
         # TODO (OM, 20201207): Using DawidSkene inside MajorityVoting to access DS.fast_sample()??
         for K in annotators:
             real_labels, crowd_labels = DS.fast_sample(p=p, _pi=_pi, I=I, num_annotators=K)
-            success_p[annotators.index(K)] = cls.success_rate(real_labels, crowd_labels, J)
+            success_p[annotators.index(K)] = cls.success_rate(real_labels, crowd_labels, J=len(p))
         return success_p
 

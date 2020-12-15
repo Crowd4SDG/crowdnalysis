@@ -42,7 +42,7 @@ class AbstractStanOptimizeConsensus(consensus.AbstractConsensus):
         """Computes consensus for question question from Data d.
         returns consensus, model parameters""" 
        
-        m, I, J, K = self._get_question_matrix_and_ranges(d, question)
+        m, I, J, K = self.get_question_matrix_and_ranges(d, question)
         stan_data, init_data, kwargs = self.map_data_to_model(m, I, J, K)
         # Here you should implement the mapping from to the input data for this Stan Model
         # This mapping should work for any question
