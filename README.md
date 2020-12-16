@@ -12,7 +12,7 @@
 - Dawid-Skene
 - Dawid-Skene (`PyStan` version, [see](https://pystan.readthedocs.io/en/latest/))
 
-# How to use as a package
+## How to use as a package
 - Clone the repo 
 - Add the `src` directory to `PYTHONPATH`
 - `pip install` the requirements into the virtual environment where you will use `crowdnalysis`
@@ -22,7 +22,7 @@
 and its initialization script (`bin/init-local.sh`) for the above-mentioned configuration. 
 
 ## Known issues
-If you are working on a 64-bit Intel platform, and you get an "Architecture not supported" error 
+- If you are working on a 64-bit Intel platform, and you get an "Architecture not supported" error 
 during GCC c++ compilation for `PyStan`, add the following line in your `~/.bashrc`:
 
 ```
