@@ -37,8 +37,35 @@ class AbstractStanOptimizeConsensus(consensus.AbstractConsensus):
 
         """
         raise NotImplementedError
-        
-    def compute_consensus(self, d: Data, question):
+
+    def reduce_num_annotators(self, jj, minim_an):
+        """
+
+        Args:
+            jj(np.array): annotators of each annotation
+            minim_an (int): minimum number of annotations for annotators to be considered independent
+
+        Returns:
+            jj (np.array): new list of annotators of each annotation
+
+        """
+        N = len(jj)
+        print('old J: '+ str(len(np.unique(jj))))
+        new_label = N+1
+
+        b, c = np.unique(jj, return_counts=True)  # b is a list of single annotators and c its number of annotations
+        for i in range(len(c)):
+            if c[i] >= minim_an:
+                jj[np.where(jj == b[i])[0]] = new_label
+                new_label += 1
+        for i in range(N):
+            if jj[i] < N + 1:
+                jj[i] = new_label
+        jj[:] -= N
+        print('new J: ' +str(len(np.unique(jj))))
+        return jj
+
+    def fit_and_compute_consensus(self, d: Data, question):
         """Computes consensus for question question from Data d.
         returns consensus, model parameters""" 
        
@@ -49,7 +76,7 @@ class AbstractStanOptimizeConsensus(consensus.AbstractConsensus):
         results = self.stan_model.optimizing(data=stan_data, init=init_data, **kwargs)
         
         # Here you should obtain the consensus (the q's) from Stan and also return the additional parameters.
-        return results["q"], kwargs
+        return results["q_z"], kwargs
 
     #def success_rate(self, real_labels, crowd_labels):
     #    Apply this model to the crowd_labels and compare against the real_labels
@@ -65,15 +92,39 @@ class StanDSOptimizeConsensus(AbstractStanOptimizeConsensus):
         # TODO (OM, 20201210): Move 'DS.stan' to an appropriate folder.
         super().__init__(stan_model_filename=DS_STAN_PATH)
 
-    
-    def map_data_to_model(m, I, J, K):
-        # TODO: Modify the line below to work properly with m, I, J, and K whatsoever
+
+    def map_data_to_model(self, m, I, J, K, minim_an = 10):
+        """
+
+                Args:
+                    m (np.ndarray): question matrix
+                    I (int): number of tasks
+                    J (int): number of labels
+                    K (int): number of annotators
+                    minim_an (int): minimum number of annotations for annotators to be considered independent
+
+                Returns:
+                    stan_data (): data in stan format
+                    init_data (): initial values for error matrices in stan format
+
+                """
+        newN = len(m[:, 0])
+        newii = m[:, 0] + 1
+        jj = m[:, 1] + 1
+        newyy = m[:, 2] + 1
+        newI = I
+        newJ = J
+        newK = K
+        newjj = self.reduce_num_annotators(jj, minim_an)
+
         stan_data = {'J': newK, 'K': newJ, 'N': newN,'I': newI,'ii': newii,'jj': newjj,'y': newyy, 'alpha':np.array([1,1])}
-        # TODO: Modify the line below to define init_beta correctly for any m, I, J and K.
-        init_beta = 0
+
+        init_beta = (np.identity(J) + 0.1) / (1 + J * 0.1)  # We suppose that the annotators tend to answer correctly the labels
+        init_beta = np.tile(init_beta, (K, 1, 1))  # We need a matrix-error for each annotator
         init_data = {"beta": init_beta}
         args = {"iter":2000}
         return stan_data, init_data, args
+
 
 
 # class StanHDSOptimizeConsensus(AbstractStanOptimizeConsensus):

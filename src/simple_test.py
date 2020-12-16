@@ -148,10 +148,29 @@ def main():
         field_severity="info_answer_0_tags",
         field_relevant="info_answer_0_relevant")
     d_ref = pybossa_expert.get_data(questions=QUESTIONS)
+    """
     for algorithm_name in Factory.algorithms:
         print("Testing consensus algorithm {}".format(algorithm_name))
-        consensus, params = _run_consensus(d_ref, QUESTIONS[1], algorithm_name)
-        print(consensus[0])
+        consensus, params = _run_consensus(d_ref, QUESTIONS[0], algorithm_name)
+        print(consensus)
+    """
+
+    #q_z comparison
+    Ts, params = _run_consensus(d_ref, QUESTIONS[0], 'DawidSkene')
+    print('DawidSkene:', Ts)
+    q_z, params = _run_consensus(d_ref, QUESTIONS[0], 'StanDSOptimize')
+    print('StanDSOptimize:', q_z)
+
+    unmatched_items = []
+    tolerance = 0.4
+    for i in range(len(q_z)):
+        for j in range(len(q_z[i])):
+            if max(q_z[i]) == q_z[i][j]:
+                if abs(q_z[i][j] - Ts[i][j]) > tolerance:
+                    unmatched_items.append(i + 1)
+    print(len(unmatched_items), "items differ with tolerance", tolerance, ":")
+    print("unmatched items:", unmatched_items)
+
         # try:
         #     consensus, params = _run_consensus(d_ref, QUESTIONS[1], algorithm_name)
         #     print(consensus[0])
