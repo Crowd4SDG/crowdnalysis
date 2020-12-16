@@ -20,7 +20,7 @@ class DawidSkene(consensus.AbstractConsensus):
         self.logpi = None
 
     def fit_and_compute_consensus(self, d, question, max_iterations=10000, tolerance=1e-7, prior=1.0):
-        m, self.I, self.J, self.K = self._get_question_matrix_and_ranges(d, question)
+        m, self.I, self.J, self.K = self.get_question_matrix_and_ranges(d, question)
         self.n = self._compute_n(m)
         # ("n:\n{}", self.n)
         # First estimate of T_{i,j} is done by probabilistic consensus
@@ -67,13 +67,13 @@ class DawidSkene(consensus.AbstractConsensus):
         return self.T, self._make_parameter_dict()
     
     def fit(self, d: Data, question, T, prior=0.0):
-        m, self.I, self.J, self.K = self._get_question_matrix_and_ranges(d, question)
+        m, self.I, self.J, self.K = self.get_question_matrix_and_ranges(d, question)
         n = self._compute_n(m)
         p, logpi = self._m_step(T, n, prior)
         return self._make_parameter_dict(p, logpi)
 
     def compute_consensus(self, d:Data, question, parameters):
-        m, self.I, self.J, self.K = self._get_question_matrix_and_ranges(d, question)
+        m, self.I, self.J, self.K = self.get_question_matrix_and_ranges(d, question)
         n = self._compute_n(m)
         p, logpi = parameters["p"], np.log(parameters["_pi"])
         return self._e_step(n, logpi, p)
