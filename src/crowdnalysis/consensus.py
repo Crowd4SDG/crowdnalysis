@@ -35,10 +35,12 @@ class AbstractConsensus:
         ones that were used to determine the consensus.
 
         returns parameters """
+
     def compute_consensus(self, d:Data, question, parameters):
         """ Computes the consensus with a fixed pre-determined set of parameters.
 
         returns consensus """
+
     def success_rate(self, real_labels, crowd_labels):
         """"""
         raise NotImplementedError

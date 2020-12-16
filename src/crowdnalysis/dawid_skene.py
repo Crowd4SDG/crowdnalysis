@@ -20,12 +20,6 @@ class DawidSkene(consensus.AbstractConsensus):
 
     def fit_and_compute_consensus(self, d, question, max_iterations=10000, tolerance=1e-7, prior=1.0):
         m, self.I, self.J, self.K = self._get_question_matrix_and_ranges(d, question)
-        #m = d.get_question_matrix(question)
-        # print("DS get_question_matrix('{}') {}:\n".format(question, m.shape), m)
-        #self.I = d. n_tasks
-        #self.J = d.n_labels(question)
-        #self.K = d.n_annotators
-
         self.n = self._compute_n(m)
         # ("n:\n{}", self.n)
         # First estimate of T_{i,j} is done by probabilistic consensus
@@ -55,9 +49,8 @@ class DawidSkene(consensus.AbstractConsensus):
             self.T = self._e_step(self.n, self.logpi, self.p)
             # print("T=", self.T)
             # Maximization
-            self.p = self._m_step_p(self.T, prior)
+            self.p, self.logpi = self._m_step(self.T, self.n, prior)
             # print("p=", self.p)
-            self.logpi = self._m_step_logpi(self.T, self.n, prior)
             # print("pi=", np.exp(self.logpi))
             has_converged = np.allclose(old_T, self.T, atol=tolerance)
             num_iterations += 1
@@ -70,15 +63,26 @@ class DawidSkene(consensus.AbstractConsensus):
             print("The maximum of", max_iterations, "iterations has been reached")
         # print("\np {}:\n{}, \npi {}:\n{},\nT {}:\n{}".format(self.p.shape, self.p, self.logpi.shape, np.exp(self.logpi), self.T.shape, self.T))
         
-        return self.T, {"p": self.p, "_pi": np.exp(self.logpi)}
+        return self.T, self._make_parameter_dict()
     
-    def compute_crossed_error(self, d: Data, question, T, prior=0.0):
-        m = d.get_question_matrix(question)
-        self.I = d.n_tasks
-        self.J = d.n_labels(question)
-        self.K = d.n_annotators
+    def fit(self, d: Data, question, T, prior=0.0):
+        m, self.I, self.J, self.K = self._get_question_matrix_and_ranges(d, question)
         n = self._compute_n(m)
-        return np.exp(self._m_step_logpi(T, n, prior))
+        p, logpi = self._m_step(T, n, prior)
+        return self._make_parameter_dict(p, logpi)
+
+    def compute_consensus(self, d:Data, question, parameters):
+        m, self.I, self.J, self.K = self._get_question_matrix_and_ranges(d, question)
+        n = self._compute_n(m)
+        p, logpi = parameters["p"], np.log(parameters["_pi"])
+        return self._e_step(n, logpi, p)
+
+    def _make_parameter_dict(self, p=None, logpi=None):
+        if p is None:
+            p = self.p
+        if logpi is None:
+            logpi = self.logpi
+        return {"p": p, "_pi": np.exp(logpi)}
 
     def _compute_n(self, m):
 
@@ -93,6 +97,9 @@ class DawidSkene(consensus.AbstractConsensus):
         for i, k, j in m:
             n[k, i, j] += 1
         return n
+
+    def _m_step(self, T, n, prior):
+        return (self._m_step_p(T, prior), self._m_step_logpi(T, n, prior))
 
     def _m_step_p(self, T, prior):
         p = np.sum(T, axis=0)
@@ -200,15 +207,15 @@ class DawidSkene(consensus.AbstractConsensus):
             success_p[annotators.index(K)] = self.DS_consensus_success_rate_OLD(p, _pi, I, K)
         return success_p
 
-    def compute_consensus_with_fixed_parameters(self, p, _pi, labels, I):
-        self.I = I
-        self.J = len(p)
-        self.K = _pi.shape[0]
-        n = self._compute_n(labels)
-        logpi = np.log(_pi)
-        prob_consensus = self._e_step(n, logpi, p)
-        consensus = np.argmax(prob_consensus, axis=1)
-        return prob_consensus, consensus
+    #def compute_consensus_with_fixed_parameters(self, p, _pi, labels, I):
+    #    self.I = I
+    #    self.J = len(p)
+    #    self.K = _pi.shape[0]
+    #    n = self._compute_n(labels)
+    #    logpi = np.log(_pi)
+    #    prob_consensus = self._e_step(n, logpi, p)
+    #    consensus = np.argmax(prob_consensus, axis=1)
+    #    return prob_consensus, consensus
 
     def generate_datasets(self, I, annotators):
         """
