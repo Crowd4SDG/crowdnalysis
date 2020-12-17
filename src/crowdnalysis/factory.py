@@ -1,3 +1,6 @@
+from typing import Type
+
+from . import consensus
 from . import dawid_skene
 from . import majority_voting
 from . import probabilistic
@@ -16,11 +19,12 @@ class Factory:
             name (str):
 
         Returns:
-            Type(AbstractConsensus):
+            Type[consensus.AbstractConsensus]: The class not its instance.
 
         Raises:
             KeyError: If the algorithm is not registered.
         """
+
         try:
             return cls.algorithms[name]
         except KeyError:
@@ -32,12 +36,14 @@ class Factory:
         """Register a new consensus algorithm
 
         Args:
-            algorithm (Type(AbstractConsensus)):
+            algorithm (Type[AbstractConsensus]):
 
         Returns:
+            None
 
         """
         cls.algorithms[algorithm.name] = algorithm
+        return None
 
 
 Factory.register_consensus_algorithm(majority_voting.MajorityVoting)
