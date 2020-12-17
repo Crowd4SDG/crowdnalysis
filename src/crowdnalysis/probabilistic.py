@@ -11,7 +11,7 @@ class Probabilistic(consensus.AbstractConsensus):
         pass
 
     @classmethod
-    def _probabilistic_consensus(cls, m, I, J, softening=0.1):
+    def probabilistic_consensus(cls, m, I, J, softening=0.1):
         n = cls.compute_counts(m, I, J)
         n += softening
         consensus = n / np.sum(n, axis=1)[:, np.newaxis]

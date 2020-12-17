@@ -36,10 +36,10 @@ class AbstractConsensus:
         # TODO (OM, 20201210): A return class for model parameters instead of dictionary
         raise NotImplementedError
 
-    def fit_many(self, d:Data, reference_consensuses):
+    def fit_many(self, d: Data, reference_consensuses):
         parameters = {}
-        for q in reference_consensuses:
-            parameters[q] = self.fit(d, q, reference_consensuses[q])
+        for q, consensus in reference_consensuses.items():
+            parameters[q] = self.fit(d, q, consensus)
         return parameters
 
     def fit(self, d: Data, question, reference_consensus):
@@ -58,5 +58,8 @@ class AbstractConsensus:
         """"""
         raise NotImplementedError
 
+    def compute_success_rates(self, parameters_ref, parameters_others, I, question):
+        """"""
+        raise NotImplementedError
 
 

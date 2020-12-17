@@ -19,13 +19,19 @@ class DawidSkene(consensus.AbstractConsensus):
         self.p = None
         self.logpi = None
 
-    def fit_and_compute_consensus(self, d, question, max_iterations=10000, tolerance=1e-7, prior=1.0):
-        m, self.I, self.J, self.K = self.get_question_matrix_and_ranges(d, question)
+    def fit_and_compute_consensus(self, d, question, **kwargs):
+        m, I, J, K = self.get_question_matrix_and_ranges(d, question)
+        return self._fit_and_compute_consensus(m , I, J, K, **kwargs)
+
+    def _fit_and_compute_consensus(self, m, I, J, K, max_iterations=10000, tolerance=1e-7, prior=1.0):
+        self.I = I
+        self.J = J
+        self.K = K
         self.n = self._compute_n(m)
         # ("n:\n{}", self.n)
-        # First estimate of T_{i,j} is done by probabilistic consensus
-        self.T, _ = Probabilistic().fit_and_compute_consensus(d, question, softening=prior)
         # print("First estimate of T ({}) by probabilistic consensus:\n".format(str(self.T.shape)), self.T)
+        # First estimate of T_{i,j} is done by probabilistic consensus
+        self.T, _ = Probabilistic.probabilistic_consensus(m, I, J, softening=prior)
 
         # Initialize the percentages of each label
         self.p = self._m_step_p(self.T, prior)
@@ -66,7 +72,7 @@ class DawidSkene(consensus.AbstractConsensus):
         
         return self.T, self._make_parameter_dict()
     
-    def fit(self, d: Data, question, T, prior=0.0):
+    def fit(self, d: Data, question, T, prior=1.0):
         m, self.I, self.J, self.K = self.get_question_matrix_and_ranges(d, question)
         n = self._compute_n(m)
         p, logpi = self._m_step(T, n, prior)
@@ -75,8 +81,12 @@ class DawidSkene(consensus.AbstractConsensus):
     def compute_consensus(self, d:Data, question, parameters):
         m, self.I, self.J, self.K = self.get_question_matrix_and_ranges(d, question)
         n = self._compute_n(m)
-        p, logpi = parameters["p"], np.log(parameters["_pi"])
+        p, logpi = self._get_parameters_from_dict(parameters)
         return self._e_step(n, logpi, p)
+
+    def _get_parameters_from_dict(self, parameters):
+        p, logpi = parameters["p"], parameters["_pi"]
+        return p, logpi
 
     def _make_parameter_dict(self, p=None, logpi=None):
         if p is None:
@@ -128,6 +138,7 @@ class DawidSkene(consensus.AbstractConsensus):
         # print("_e_step > T:\n", T)
         return T
 
+    """
     def sample(self, p, _pi, I, num_annotators):
         # TODO: Consider using pyAgrum
         # _pi = np.exp(logpi)
@@ -218,22 +229,10 @@ class DawidSkene(consensus.AbstractConsensus):
     #    consensus = np.argmax(prob_consensus, axis=1)
     #    return prob_consensus, consensus
 
-    def generate_datasets(self, I, annotators):
-        """
+    """
 
-        Args:
-            I (int): number of tasks
-            annotators List[int]: list of annotator numbers
 
-        Yields:
-            Tuple[numpy.ndarray, numpy.ndarray, int]: (real_labels, crowd_labels, K) tuple
-
-        """
-        for K in annotators:
-            real_labels, crowd_labels = self.fast_sample(p=self.p, _pi=np.exp(self.logpi), I=I, num_annotators=K)
-            yield real_labels, crowd_labels, K
-
-    def generate_crowd_labels(self, real_labels, num_annotators, J=None, _pi=None):
+    def generate_crowd_labels(self, real_labels, num_annotators, parameters=None):
         """
 
         Args:
@@ -245,20 +244,16 @@ class DawidSkene(consensus.AbstractConsensus):
         Returns:
             numpy.ndarray: 2D array with dimensions (I * K, 3)
 
-        Raises:
-            ValueError: if _pi & self.logpi OR J & self.J are None
-
         """
-        # TODO (OM, 20201202): J and _pi args added to be used by `fast_sample` when it's called as a static method
-        I = real_labels.shape[0]  # number of tasks
-        if _pi is None:
-            if self.logpi is None:
-                raise ValueError("_pi not given nor learned by the DS model")
+        if parameters is None:
+            p = self.p
             _pi = np.exp(self.logpi)
-        if J is None:
-            if self.J is None:
-                raise ValueError("J not given nor set in the DS model")
-            J = self.J
+        else:
+            p, _pi = self._get_parameters_from_dict(parameters)
+
+        print("_pi",_pi)
+        I = real_labels.shape[0]  # number of tasks
+        J = len(p)
         K = _pi.shape[0]  #
         # Sample the annotators
         # print("Generating crowd labels I: {}, J: {}, K: {}".format(I, J, K))
@@ -288,7 +283,7 @@ class DawidSkene(consensus.AbstractConsensus):
             crowd_labels[:, 2][ca_indexes] = emitted_labels
         return crowd_labels
 
-    def fast_sample(self, p, _pi, I, num_annotators):
+    def sample(self, I, num_annotators, parameters=None):
         """
 
         Args:
@@ -300,14 +295,67 @@ class DawidSkene(consensus.AbstractConsensus):
         Returns:
             Tuple[numpy.ndarray, numpy.ndarray]:
         """
+        if parameters is None:
+            p = self.p
+            _pi = np.exp(self.logpi)
+        else:
+            p, _pi = self._get_parameters_from_dict(parameters)
+
         J = len(p)  # number of labels
         # Sample the real labels
         real_labels = np.random.choice(J, size=I, p=p)
-        # TODO (OM, 20201202): Will fast_sample be used as a standalone method independent of its self.p and self.logpi attributes?
-        #  If yes, since generate_crowd_labels uses self.logpi, we should pass _pi as optional arg to it as below?
-        #  Similarly, generate_crowd_labels uses self.p to find J. So, pass J as optional arg to it as below?
-        crowd_labels = self.generate_crowd_labels(real_labels, num_annotators, J=J, _pi=_pi)
+        crowd_labels = self.generate_crowd_labels(real_labels, num_annotators, parameters)
         return real_labels, crowd_labels
+
+    def generate_datasets(self, I, annotators, parameters=None):
+        """
+
+        Args:
+            I (int): number of tasks
+            annotators List[int]: list of annotator numbers
+
+        Yields:
+            Tuple[numpy.ndarray, numpy.ndarray, int]: (real_labels, crowd_labels, K) tuple
+
+        """
+        for K in annotators:
+            real_labels, crowd_labels = self.sample(I, K, parameters)
+            yield real_labels, crowd_labels, K
+
+    def generate_linked_datasets(self, parameters_ref, parameters_others, I, annotators):
+        for real_labels, crowd_labels_ref, K in self.generate_datasets(I, annotators=annotators,
+                                                                       parameters=parameters_ref):
+            crowd_labels_others = {}
+            for other_name, parameters_other in parameters_others.items():
+                crowd_labels_others[other_name] = self.generate_crowd_labels(real_labels, num_annotators=K,
+                                                                             parameters=parameters_other)
+            yield K, real_labels, crowd_labels_ref, crowd_labels_others
+
+    def compute_linked_consensuses(self, parameters_ref, parameters_others, models, I, annotators):
+        p, _pi = self._get_parameters_from_dict(parameters_ref)
+        J = len(p)
+        K = _pi.shape[0]
+        for K, real_labels, crowd_labels_ref, crowd_labels_others in self.generate_linked_datasets(parameters_ref,
+                                                                                                   parameters_others,
+                                                                                                   I, annotators):
+            for model_name, model in models.items():
+                consensus_ref, _ = model._fit_and_compute_consensus(crowd_labels_ref, I, J, K)
+                consensus_others = {}
+                for other_name, crowd_labels_other in crowd_labels_others.items():
+                    consensus_others[other_name], _ = model._fit_and_compute_consensus(crowd_labels_other, I, J, K)
+
+                yield K, model_name, real_labels, consensus_ref, consensus_others
+
+    def evaluate_linked_consensuses(self, parameters_ref, parameters_others, models, measures, I, annotators):
+        for K, model_name, real_labels, consensus_ref, consensus_others in self.compute_linked_consensuses(parameters_ref,
+                                                                                              parameters_others,
+                                                                                              models, I, annotators):
+            for measure_name, measure in measures.items():
+                yield K, measure_name, model_name, "reference", measure(real_labels, consensus_ref)
+                for other_name, consensus_other in consensus_others.items():
+                    yield K, measure_name, model_name, other_name, measure(real_labels, consensus_other)
+
+
 
     def success_rate(self, real_labels, crowd_labels):
         I = real_labels.shape[0]  # number of tasks
