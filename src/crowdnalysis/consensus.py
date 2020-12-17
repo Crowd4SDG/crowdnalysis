@@ -22,12 +22,25 @@ class AbstractConsensus:
         K = d.n_annotators
         return m, I, J, K
 
+    def fit_and_compute_consensuses(self, d, questions, **kwargs):
+        consensuses = {}
+        parameters = {}
+        for q in questions:
+            consensuses[q], parameters[q] = self.fit_and_compute_consensus(d, q)
+        return consensuses, parameters
+
     def fit_and_compute_consensus(self, d: Data, question, **kwargs):
         """Computes consensus and fits model for question question from Data d.
 
         returns consensus, model parameters"""
         # TODO (OM, 20201210): A return class for model parameters instead of dictionary
         raise NotImplementedError
+
+    def fit_many(self, d:Data, reference_consensuses):
+        parameters = {}
+        for q in reference_consensuses:
+            parameters[q] = self.fit(d, q, reference_consensuses[q])
+        return parameters
 
     def fit(self, d: Data, question, reference_consensus):
         """ Fits the model parameters provided that the consensus is already known.
