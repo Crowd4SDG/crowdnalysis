@@ -11,7 +11,7 @@ class MajorityVoting(consensus.AbstractConsensus):
         pass
 
     @classmethod
-    def _fit_and_compute_consensus(cls, m, I, J, K=None):
+    def m_fit_and_compute_consensus(cls, m, I, J, K=None):
         n = cls.compute_counts(m, I, J)
         # print(n)
         best_count = np.amax(n, axis=1)
@@ -23,11 +23,11 @@ class MajorityVoting(consensus.AbstractConsensus):
         # print("MajorityVoting.majority_voting consensus ({}) -> \n{}\nbest ({}) -> \n{}".format(consensus.shape, consensus, best.shape, best))
         return consensus, best
 
-    @classmethod
-    def fit_and_compute_consensus(cls, d: Data, question):
-        m, I, J, K = cls.get_question_matrix_and_ranges(d, question)
-        # print("MajorityVoting > question_matrix ({}) -> \n".format(m.shape), m)
-        return cls._fit_and_compute_consensus(m, I, J)
+    #@classmethod
+    #def fit_and_compute_consensus(cls, d: Data, question):
+    #    m, I, J, K = cls.get_question_matrix_and_ranges(d, question)
+    #    # print("MajorityVoting > question_matrix ({}) -> \n".format(m.shape), m)
+    #    return cls._fit_and_compute_consensus(m, I, J)
 
     @classmethod
     def success_rate(cls, real_labels, crowd_labels, J):
