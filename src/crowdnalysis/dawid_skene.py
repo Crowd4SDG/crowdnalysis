@@ -16,7 +16,7 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
         self.p = None
         self.logpi = None
 
-    def m_fit_and_compute_consensus(self, m, I, J, K, max_iterations=10000, tolerance=1e-7, prior=1.0):
+    def m_fit_and_compute_consensus(self, m, I, J, K, max_iterations=10000, tolerance=1e-3, prior=1.0):
         self.n = self._compute_n(m, I, J, K)
         # ("n:\n{}", self.n)
         # print("First estimate of T ({}) by probabilistic consensus:\n".format(str(self.T.shape)), self.T)
@@ -78,37 +78,48 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
 
     # Methods from GenerativeAbstractConsensus
 
-    def generate_crowd_labels(self, real_labels, num_annotators, parameters=None):
+    def sample_real_labels(self, I, parameters=None):
+        """
+
+        Args:
+            I: number of tasks
+            num_annotators: number of annotators
+
+        Returns:
+            Tuple[numpy.ndarray]:
+        """
+
+        p, _pi = self._get_parameters_from_dict(parameters)
+        J = len(p)  # number of labels
+        # Sample the real labels
+        return np.random.choice(J, size=I, p=p)
+
+    def generate_crowd_labels(self, real_labels, num_annotations_per_task, parameters=None):
         """
 
         Args:
             real_labels (numpy.ndarray): 1D array with dimension (I)
-            num_annotators (int): number of annotators
+            num_annotations_per_task (int):number of annotations per task
 
         Returns:
-            numpy.ndarray: 2D array with dimensions (I * K, 3)
+            numpy.ndarray: 2D array with dimensions (I * num_annotations_per_task, 3)
 
         """
-        if parameters is None:
-            p = self.p
-            _pi = np.exp(self.logpi)
-        else:
-            p, _pi = self._get_parameters_from_dict(parameters)
-
-        print("_pi",_pi)
+        p, _pi = self._get_parameters_from_dict(parameters)
+        #print("_pi", _pi)
         I = real_labels.shape[0]  # number of tasks
         J = len(p)
         K = _pi.shape[0]  #
         # Sample the annotators
         # print("Generating crowd labels I: {}, J: {}, K: {}".format(I, J, K))
-        annotators = np.random.choice(K, size=(I, num_annotators))
+        annotators = np.random.choice(K, size=(I, num_annotations_per_task))
         labels_and_annotators = annotators + real_labels[:, np.newaxis] * K
         labels_and_annotators = labels_and_annotators.flatten()
         unique_la, inverse_la, counts_la = np.unique(labels_and_annotators, return_inverse=True, return_counts=True)
         # print(inverse_la.shape)
         # print(inverse_la)
-        crowd_labels = np.zeros((I * num_annotators, 3), dtype=np.int32)
-        crowd_labels[:, 0] = np.arange(I * num_annotators) // num_annotators
+        crowd_labels = np.zeros((I * num_annotations_per_task, 3), dtype=np.int32)
+        crowd_labels[:, 0] = np.arange(I * num_annotations_per_task) // num_annotations_per_task
         # crowd_labels.flatten()
         for i_la, label_and_annotator in enumerate(unique_la):
             real_label = label_and_annotator // K
@@ -127,34 +138,14 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
             crowd_labels[:, 2][ca_indexes] = emitted_labels
         return crowd_labels
 
-    def sample(self, I, num_annotators, parameters=None):
-        """
+    # Private methods
 
-        Args:
-            p:
-            _pi:
-            I: number of tasks
-            num_annotators: number of annotators
-
-        Returns:
-            Tuple[numpy.ndarray, numpy.ndarray]:
-        """
+    def _get_parameters_from_dict(self, parameters):
         if parameters is None:
             p = self.p
             _pi = np.exp(self.logpi)
         else:
-            p, _pi = self._get_parameters_from_dict(parameters)
-
-        J = len(p)  # number of labels
-        # Sample the real labels
-        real_labels = np.random.choice(J, size=I, p=p)
-        crowd_labels = self.generate_crowd_labels(real_labels, num_annotators, parameters)
-        return real_labels, crowd_labels
-
-    # Private methods
-
-    def _get_parameters_from_dict(self, parameters):
-        p, logpi = parameters["p"], parameters["_pi"]
+            p, logpi = parameters["p"], parameters["_pi"]
         return p, logpi
 
     def _make_parameter_dict(self, p=None, logpi=None):
