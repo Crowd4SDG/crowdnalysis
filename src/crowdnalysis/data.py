@@ -63,12 +63,12 @@ class Data:
         return d
 
     @classmethod
-    def from_pybossa(cls, file_name, questions, preprocess=lambda x:x, task_ids=None, categories=None):
+    def from_pybossa(cls, file_name, questions, preprocess=lambda x:x, task_ids=None, categories=None, other_columns=[]):
         """ 
         Create a Data object from a pybossa file.
         """
         df = pd.read_csv(file_name)
-        columns_to_retain = ["task_id", "user_id"] + questions
+        columns_to_retain = ["task_id", "user_id"] + questions + other_columns
         df = preprocess(df)
         df = df[columns_to_retain]
         #print(df)
