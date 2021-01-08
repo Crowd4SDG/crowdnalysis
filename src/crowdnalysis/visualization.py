@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from dominate import document, tags
 from dominate.util import raw
@@ -75,5 +77,6 @@ def html_description(consensus, data: Data, question, picture_field, width="120"
     if output_file:
         with open(output_file, 'w') as f:
             f.write(doc.render())
-        print("Rendered HTML for the consensus of question '{}' is saved into file:\n '{}'".format(question, output_file))
+        print("Rendered HTML for the consensus of question '{}' is saved into file:\n '{}'".format(
+            question, os.path.relpath(output_file)))
     return str(doc)
