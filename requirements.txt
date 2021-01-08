@@ -7,4 +7,4 @@ matplotlib
 seaborn
 pystan
 statsmodels
-html_writer
+dominate
