@@ -1,23 +1,36 @@
 import os
 
 import numpy as np
-from dominate import document, tags
-from dominate.util import raw
+from dominate import document, tags, util
 
 from .data import Data
 
-def html_description(consensus, data: Data, question, picture_field, width="120", height="90",
-                     dec="3", warn_threshold=.1, output_file=None):
+
+def html_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, width="120", height="90",
+                     dec="3", warn_threshold=.1, output_file: str = None) -> str:
+    """Returns an HTML string that displays the images of tasks.
+
+    Optionally, saves the string to an HTML file.
+
+    Args:
+        consensus: Consensus probabilities of tasks
+        data : Annotation data
+        question: Question for annotation
+        picture_field: column name in the `Data.df` dataframe
+        width: max image width
+        height: max image height
+        dec: number of decimal digits of probabilities to display
+        warn_threshold: threshold difference between best and second best consensus probabilities to be marked
+            as warning
+        output_file: (optional) full path to the output HTML file
+
+    Returns:
+        str: HTML string
+
     """
-    returns a string with the HTML showing the pictures
-    """
-    best = np.argmax(consensus, axis=1)
-    labels = np.unique(best)
-    label_names = list(data.df[question].cat.categories)
 
     FRAME_COLOR = "#ef0707"  # "#e30c0c"
-
-    style_ = """
+    STYLE = """
         .labels {{
           overflow-x: scroll;
           overflow-y: hidden;
@@ -35,20 +48,24 @@ def html_description(consensus, data: Data, question, picture_field, width="120"
           padding:2px;
           border:6px solid {c};
          }}
-    """
-    style_ = style_.format(w=width, h=height, c=FRAME_COLOR)
+    """.format(w=width, h=height, c=FRAME_COLOR)
+    NOTES = ("- Hover on any image to read its best and second best consensus probabilities.</br>"
+             "- When these two probabilities have a difference &le; {t}, the image is framed with "
+             "<span style='color:{c}; font-weight:bold'>borders</span> and marked as warning.</br>"
+             "- Scroll horizontally to view all images.").format(t=warn_threshold, c=FRAME_COLOR)
+    TITLE = "{} Consensus :: {}".format(data.data_src, question.title())
 
-    title_ = "{} Consensus :: {}".format(data.data_src, question.title())
-    with document(title=title_) as doc:
+    best = np.argmax(consensus, axis=1)
+    labels = np.unique(best)
+    label_names = list(data.df[question].cat.categories)
+
+    with document(title=TITLE) as doc:
         with doc.head:
-            tags.style(style_)
+            tags.style(STYLE)
             tags.base(target="_blank")
         with doc.body as body:
-            body.add(tags.h1(title_, style="color:Tomato; text-align:center"))
-            body.add(tags.p(raw("- Hover on any image to read its best and second best consensus probabilities.</br>"
-                                "- When these two probabilities have a difference &le; {t}, the image is framed with "
-                                "<span style='color:{c}; font-weight:bold'>borders</span> and marked as warning.</br>"
-                                "- Scroll horizontally to view all images.".format(t=warn_threshold, c=FRAME_COLOR))))
+            body.add(tags.h1(TITLE, style="color:Tomato; text-align:center"))
+            body.add(tags.p(util.raw(NOTES)))
             for label in labels:
                 task_indices = np.where(best == label)[0]
                 task_picture_links = data.get_field(task_indices, picture_field, unique=True)
@@ -59,7 +76,7 @@ def html_description(consensus, data: Data, question, picture_field, width="120"
                     for ix, tpl in enumerate(task_picture_links):
                         l = tags.div(cls="task-image")
                         task_index = task_indices[ix]
-                        probabilities = [(p, li) for li, p in enumerate(consensus[task_index])]
+                        probabilities = [(p, li) for li, p in enumerate(consensus[task_index, :])]
                         probabilities.sort(key=lambda x: x[0], reverse=True)
                         probs_str = "\n".join("- {0}: {1:.{2}f}".format(
                             label_names[li], p, dec) for p, li in probabilities[:2])
@@ -77,6 +94,6 @@ def html_description(consensus, data: Data, question, picture_field, width="120"
     if output_file:
         with open(output_file, 'w') as f:
             f.write(doc.render())
-        print("Rendered HTML for the consensus of question '{}' is saved into file:\n '{}'".format(
-            question, os.path.relpath(output_file)))
+        print("HTML for the {} consensus for the question '{}' is saved into file:\n '{}'".format(
+            data.data_src, question, os.path.relpath(output_file)))
     return str(doc)
