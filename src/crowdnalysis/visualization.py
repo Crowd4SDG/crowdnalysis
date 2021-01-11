@@ -103,9 +103,9 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
 
 def csv_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, dec=3,
                     output_file: str = None) -> str:
-    """Saves/returns a CSV-format string that displays the images of tasks.
+    """Saves/returns the CSV-format representation of the consensus on tasks.
 
-        `diff_best_two` column is the difference between the best and second best consensus probabilities.
+    `diff_best_two` column is the difference between the best and second best consensus probabilities.
 
         Args:
             consensus: Consensus probabilities of tasks
@@ -119,14 +119,14 @@ def csv_description(consensus: np.ndarray, data: Data, question: str, picture_fi
             Union[None, str]: If output_file is None, returns the resulting csv format as a string.
                 Otherwise returns None.
         """
-    def f(x):
+    def diff_best_two(x):
         probabilities = list(x)
         probabilities.sort(reverse=True)
         return probabilities[0] - probabilities[1]
 
     label_names = list(data.df[question].cat.categories)
     df = pd.DataFrame(consensus, columns=label_names)
-    df["diff_best_two"] = df.apply(f, axis=1)
+    df["diff_best_two"] = df.apply(diff_best_two, axis=1)
     df.index.name = "task_index"
     df[picture_field] = data.get_field(list(df.index), picture_field, unique=True)
     df = round(df, dec)
