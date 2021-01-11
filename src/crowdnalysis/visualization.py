@@ -1,13 +1,15 @@
 import os
+from typing import Union
 
 import numpy as np
+import pandas as pd
 from dominate import document, tags, util
 
 from .data import Data
 
 
-def html_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, width="120", height="90",
-                     dec="3", warn_threshold=.1, output_file: str = None) -> str:
+def html_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, width=120, height=90,
+                     dec=3, warn_threshold=.1, output_file: str = None) -> str:
     """Returns an HTML string that displays the images of tasks.
 
     Optionally, saves the string to an HTML file.
@@ -97,3 +99,39 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
         print("HTML for the {} consensus for the question '{}' is saved into file:\n '{}'".format(
             data.data_src, question, os.path.relpath(output_file)))
     return str(doc)
+
+
+def csv_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, dec=3,
+                    output_file: str = None) -> str:
+    """Saves/returns a CSV-format string that displays the images of tasks.
+
+        `diff_best_two` column is the difference between the best and second best consensus probabilities.
+
+        Args:
+            consensus: Consensus probabilities of tasks
+            data : Annotation data
+            question: Question for annotation
+            picture_field: column name in the `Data.df` dataframe
+            dec: number of decimal digits of probabilities to display
+            output_file: (optional) full path to the output HTML file
+
+        Returns:
+            Union[None, str]: If output_file is None, returns the resulting csv format as a string.
+                Otherwise returns None.
+        """
+    def f(x):
+        probabilities = list(x)
+        probabilities.sort(reverse=True)
+        return probabilities[0] - probabilities[1]
+
+    label_names = list(data.df[question].cat.categories)
+    df = pd.DataFrame(consensus, columns=label_names)
+    df["diff_best_two"] = df.apply(f, axis=1)
+    df.index.name = "task_index"
+    df[picture_field] = data.get_field(list(df.index), picture_field, unique=True)
+    df = round(df, dec)
+    val = df.to_csv(output_file)
+    if output_file:
+        print("CSV-format output for the {} consensus for the question '{}' is saved into file:\n '{}'".format(
+            data.data_src, question, os.path.relpath(output_file)))
+    return val
