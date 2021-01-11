@@ -9,7 +9,7 @@ from .data import Data
 
 
 def html_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, width=120, height=90,
-                     dec=3, warn_threshold=.1, output_file: str = None) -> str:
+                     dec=3, warn_threshold=.1, output_file: str = None, pretty=True) -> str:
     """Returns an HTML string that displays the images of tasks.
 
     Optionally, saves the string to an HTML file.
@@ -25,13 +25,14 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
         warn_threshold: threshold difference between best and second best consensus probabilities to be marked
             as warning
         output_file: (optional) full path to the output HTML file
+        pretty: True, for a more human readable HTML string; False, for a smaller sized file.
 
     Returns:
-        str: HTML string
+        HTML string
 
     """
 
-    FRAME_COLOR = "#ef0707"  # "#e30c0c"
+    FRAME_COLOR = "#ef0707"
     STYLE = """
         .labels {{
           overflow-x: scroll;
@@ -49,11 +50,11 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
         .warn{{
           padding:2px;
           border:6px solid {c};
-         }}
+        }}
     """.format(w=width, h=height, c=FRAME_COLOR)
-    NOTES = ("- Hover on any image to read its best and second best consensus probabilities.</br>"
+    NOTES = ("- Hover on any image to read its best and second best consensus probabilities.<br/>"
              "- When these two probabilities have a difference &le; {t}, the image is framed with "
-             "<span style='color:{c}; font-weight:bold'>borders</span> and marked as warning.</br>"
+             "<span style='color:{c}; font-weight:bold'>borders</span> and marked as warning.<br/>"
              "- Scroll horizontally to view all images.").format(t=warn_threshold, c=FRAME_COLOR)
     TITLE = "{} Consensus :: {}".format(data.data_src, question.title())
 
@@ -93,16 +94,17 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
                         label_header = doc.body.getElementById(label_id)
                         label_header.add_raw_string(" (<span style='color:{c}'>{n}</span> warning{s})".format(
                             c=FRAME_COLOR, n=str(n_warn), s="s" if n_warn > 1 else ""))
+    html_str = doc.render(pretty=pretty, xhtml=True)
     if output_file:
         with open(output_file, 'w') as f:
-            f.write(doc.render())
+            f.write(html_str)
         print("HTML for the {} consensus for the question '{}' is saved into file:\n '{}'".format(
             data.data_src, question, os.path.relpath(output_file)))
-    return str(doc)
+    return html_str
 
 
 def csv_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, dec=3,
-                    output_file: str = None) -> str:
+                    output_file: str = None) -> Union[None, str]:
     """Saves/returns the CSV-format representation of the consensus on tasks.
 
     `diff_best_two` column is the difference between the best and second best consensus probabilities.
@@ -116,8 +118,7 @@ def csv_description(consensus: np.ndarray, data: Data, question: str, picture_fi
             output_file: (optional) full path to the output HTML file
 
         Returns:
-            Union[None, str]: If output_file is None, returns the resulting csv format as a string.
-                Otherwise returns None.
+            If output_file is None, returns the resulting csv format as a string. Otherwise, returns None.
         """
     def diff_best_two(x):
         probabilities = list(x)
