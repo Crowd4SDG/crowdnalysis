@@ -268,9 +268,9 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
                 n_warn_total += n_warn
                 n_discard_warn_total += n_discard_warn
                 n_discard_good_total += n_discard_good
-            str_summary = ("Total Consensus Warning: <span style='color:{c}'>{tw:.1%}</span><br/> "
-                           "Total Discarded Warning: <span style='color:{o}'>{tdw:.1%}</span>, "
-                           "Total Discarded Good: <span style='color:{o}'>{tdg:.1%}</span>").format(
+            str_summary = ("Consensus Warnings: <span style='color:{c}'>{tw:.1%}</span><br/> "
+                           "Discarded Warnings: <span style='color:{o}'>{tdw:.1%}</span>, "
+                           "Discarded Good: <span style='color:{o}'>{tdg:.1%}</span>").format(
                 c=FRAME_COLOR, o=OUTLINE_COLOR, tw=n_warn_total/consensus.shape[0],
                 tdw=0 if n_warn_total == 0 else n_discard_warn_total/n_warn_total,
                 tdg=n_discard_good_total/(data.n_tasks - n_warn_total))
