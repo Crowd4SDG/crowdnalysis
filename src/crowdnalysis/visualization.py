@@ -200,7 +200,8 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
     NOTES = ("- Hover on any image to read its best and second best consensus probabilities.<br/>"
              "- When these two probabilities have a difference &le; {t}, the image is framed with "
              "<span style='color:{c}; font-weight:bold'>borders</span> and marked as warning.<br/>"
-             "- Images which were discarded by the <em>Pipeline</em> are "
+             "- Otherwise, the image is regarded as 'good' (regardless of whether it is relevant or not).<br/>"
+             "- Images which were discarded by <em>POLIMI's pipeline</em> are "
              "<span style='color:{o}; font-weight:bold'>outlined</span>.<br/>"
              "- Scroll horizontally to view all images.").format(t=warn_threshold, c=FRAME_COLOR, o=OUTLINE_COLOR)
     TITLE = "{} Consensus :: {}".format(data.data_src, question.title())
