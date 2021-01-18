@@ -149,7 +149,7 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
         consensus: Consensus probabilities of tasks
         data : Annotation data
         question: Question for annotation
-        pipeline_task_indices: List of task indices of that were filtered by POLIMI Pipeline
+        pipeline_task_indices: List of task indices of that were filtered by POLIMI Pipeline (i.e. not discarded ones)
         picture_field: column name in the `Data.df` dataframe
         width: max image width
         height: max image height
@@ -206,6 +206,28 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
              "- Scroll horizontally to view all images.").format(t=warn_threshold, c=FRAME_COLOR, o=OUTLINE_COLOR)
     TITLE = "{} Consensus :: {}".format(data.data_src, question.title())
 
+    def label_info(n_warn_, n_discard_):
+        info_ = ""
+        if n_warn_ > 0:
+            info_ = "<span style='color:{c}'>{n}</span> warning{s}".format(
+                c=FRAME_COLOR, n=str(n_warn_), s="s" if n_warn_ > 1 else "")
+        if n_discard_ > 0:
+            if info_:
+                info_ += ", "
+            info_ += "<span style='color:{o}'>{n}</span> discarded".format(
+                o=OUTLINE_COLOR, n=str(n_discard_))
+        info_ = " ({})".format(info_)
+        return info_
+
+    def make_summary(consensus_, data_, n_warn_total_, n_discard_good_total_, n_discard_warn_total_):
+        str_summary_ = ("Consensus Warnings: <span style='color:{c}'>{tw:.1%}</span><br/>"
+                        "Discarded Warnings: <span style='color:{o}'>{tdw:.1%}</span>, "
+                        "Discarded Good: <span style='color:{o}'>{tdg:.1%}</span>").format(
+            c=FRAME_COLOR, o=OUTLINE_COLOR, tw=n_warn_total_ / consensus_.shape[0],
+            tdw=0 if n_warn_total_ == 0 else n_discard_warn_total_/n_warn_total_,
+            tdg=n_discard_good_total_/(data_.n_tasks - n_warn_total_))
+        return str_summary_
+
     best = np.argmax(consensus, axis=1)
     labels = np.unique(best)
     label_names = list(data.df[question].cat.categories)
@@ -255,33 +277,19 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
                         l += tags.a(tags.img(src=tpl, title=img_title, **kwargs), href=tpl)
                     n_discard = n_discard_warn + n_discard_good
                     if n_warn + n_discard > 0:
-                        str_label = ""
-                        if n_warn > 0:
-                            str_label = "<span style='color:{c}'>{n}</span> warning{s}".format(
-                                c=FRAME_COLOR, n=str(n_warn), s="s" if n_warn > 1 else "")
-                        if n_discard > 0:
-                            if str_label:
-                                str_label += ", "
-                            str_label += "<span style='color:{o}'>{n}</span> discarded".format(
-                                o=OUTLINE_COLOR, n=str(n_discard_warn + n_discard_good))
                         label_header = doc.body.getElementById(label_id)
-                        label_header.add_raw_string(" ({})".format(str_label))
+                        label_header.add_raw_string(label_info(n_warn, n_discard))
                 n_warn_total += n_warn
                 n_discard_warn_total += n_discard_warn
                 n_discard_good_total += n_discard_good
-            str_summary = ("Consensus Warnings: <span style='color:{c}'>{tw:.1%}</span><br/> "
-                           "Discarded Warnings: <span style='color:{o}'>{tdw:.1%}</span>, "
-                           "Discarded Good: <span style='color:{o}'>{tdg:.1%}</span>").format(
-                c=FRAME_COLOR, o=OUTLINE_COLOR, tw=n_warn_total/consensus.shape[0],
-                tdw=0 if n_warn_total == 0 else n_discard_warn_total/n_warn_total,
-                tdg=n_discard_good_total/(data.n_tasks - n_warn_total))
             summary_elm = doc.body.getElementById(summary_id)
-            summary_elm.add_raw_string(str_summary)
+            summary_elm.add_raw_string(make_summary(consensus, data, n_warn_total,
+                                                    n_discard_good_total, n_discard_warn_total))
 
     html_str = doc.render(pretty=pretty, xhtml=True)
     if output_file:
         with open(output_file, 'w') as f:
             f.write(html_str)
-        print("HTML for the {} consensus for the question '{}' is saved into file:\n '{}'".format(
+        print("HTML for the {} 'consensus vs pipeline filter' for the question '{}' is saved into file:\n '{}'".format(
             data.data_src, question, os.path.relpath(output_file)))
     return html_str
