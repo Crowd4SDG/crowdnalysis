@@ -7,6 +7,8 @@ import pystan
 from . import consensus
 from .data import Data
 
+import pickle
+
 
 with importlib.resources.path("crowdnalysis", "DS.stan") as path_:
     DS_STAN_PATH = str(path_)
@@ -73,10 +75,63 @@ class AbstractStanOptimizeConsensus(consensus.AbstractConsensus):
         stan_data, init_data, kwargs = self.map_data_to_model(m, I, J, K)
         # Here you should implement the mapping from to the input data for this Stan Model
         # This mapping should work for any question
-        results = self.stan_model.optimizing(data=stan_data, init=init_data, **kwargs)
+        stan_model = pickle.load(open('DS_stan.pkl', 'rb'))
+        results = stan_model.optimizing(data=stan_data, init=init_data, **kwargs)
         
         # Here you should obtain the consensus (the q's) from Stan and also return the additional parameters.
         return results["q_z"], kwargs
+
+    def fit(self, d: Data, question, reference_consensus):
+        """ Fits the model parameters provided that the consensus is already known.
+        This is useful to determine the errors of a different set of annotators than the
+        ones that were used to determine the consensus.
+
+            Args:
+                Data: data used for the Dawid-Skene stan model.
+                question (str): label in which we are working (relevant, severity, compact_severity)
+                reference_consensus (np.ndarray): real consensus for every item.
+
+            Returns:
+                results['pi'] (np.array): Prior probabilities for each label.
+                results['beta'] (np.ndarray): Error-matrices for each annotator.
+
+        """
+
+        m, I, J, K = self.get_question_matrix_and_ranges(d, question)
+        stan_data, init_data, kwargs = self.map_data_to_model(m, I, J, K)
+        stan_data['q_z'] = reference_consensus
+
+        stan_model_fit = pickle.load(open('DS_stan_fit.pkl', 'rb'))
+        results = stan_model_fit.optimizing(data=stan_data, init=init_data, **kwargs)
+
+        # Here you should obtain the consensus (the q's) from Stan and also return the additional parameters.
+        return results['pi'], results['beta'], kwargs
+
+    def compute_consensus(self, d: Data, question, pi, beta):
+        """ Computes the consensus with a fixed pre-determined set of parameters.
+        returns consensus
+
+            Args:
+                Data: data used for the Dawid-Skene stan model.
+                question (str): label in which we are working (relevant, severity, compact_severity)
+                pi (np.array): Prior probabilities for each label.
+                beta (np.ndarray): Error-matrices for each annotator.
+
+            Returns:
+                results['q_z'] (np.ndarray): real consensus for every item.
+        """
+
+        m, I, J, K = self.get_question_matrix_and_ranges(d, question)
+        stan_data, init_data, kwargs = self.map_data_to_model(m, I, J, K)
+        stan_data['pi'] = pi
+        stan_data['beta'] = beta
+
+        stan_model_fit = pickle.load(open('DS_stan_compute_consensus.pkl', 'rb'))
+        results = stan_model_fit.optimizing(data=stan_data, init=init_data, **kwargs)
+
+        # Here you should obtain the consensus (the q's) from Stan and also return the additional parameters.
+        return results['q_z'], kwargs
+
 
     #def success_rate(self, real_labels, crowd_labels):
     #    Apply this model to the crowd_labels and compare against the real_labels
@@ -90,8 +145,8 @@ class StanDSOptimizeConsensus(AbstractStanOptimizeConsensus):
 
     def __init__(self):
         # TODO (OM, 20201210): Move 'DS.stan' to an appropriate folder.
-        super().__init__(stan_model_filename=DS_STAN_PATH)
-
+        #super().__init__(stan_model_filename=DS_STAN_PATH)
+        pass
 
     def map_data_to_model(self, m, I, J, K, minim_an = 10):
         """
