@@ -22,10 +22,21 @@
 and its initialization script (`bin/init-local.sh`) for the above-mentioned configuration. 
 
 ## Known issues
+### On Mac
 - If you are working on a 64-bit Intel platform, and you get an "Architecture not supported" error 
 during GCC c++ compilation for `PyStan`, add the following line in your `~/.bashrc`:
 
 ```
 # Set architecture to avoid GCC compilation problems with relavant python packages
 export ARCHFLAGS="-arch x86_64"
+```
+
+- If `pystan.StanModel.sampling` method seems to run indefinitely, re-run it with the `verbose=True` parameter. 
+If you see the error `ModuleNotFoundError: No module named 'stanfit4anon_model...`, 
+insert the following lines on top of your imports 
+([hat-tip](https://discourse.mc-stan.org/t/pystan-throws-error-when-running-chains-in-parallel-n-jobs-1/17563/4)):
+  
+```
+import multiprocessing
+multiprocessing.set_start_method("fork")
 ```
