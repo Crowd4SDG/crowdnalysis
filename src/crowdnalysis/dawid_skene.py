@@ -129,7 +129,6 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
             emission_p = _pi[annotator_index, real_label]
             # print("i_la:", i_la)
             # print("counts:", counts_la[i_la])
-            # emission_p[np.isnan(emission_p)] = 0.  # TODO (OM, 20121207): Hack added to escape NaN probabilities.
             emitted_labels = np.random.choice(J, size=counts_la[i_la], p=emission_p)
             ca_indexes = np.equal(inverse_la, i_la)
             # print(ca_indexes.shape)
@@ -145,8 +144,8 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
             p = self.p
             _pi = np.exp(self.logpi)
         else:
-            p, logpi = parameters["p"], parameters["_pi"]
-        return p, logpi
+            p, _pi = parameters["p"], parameters["_pi"]
+        return p, _pi
 
     def _make_parameter_dict(self, p=None, logpi=None):
         if p is None:
