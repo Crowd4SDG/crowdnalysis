@@ -75,11 +75,11 @@ class Data:
 
     @classmethod
     def _from_single_file(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
-                          other_columns=[]):
+                          other_columns=[], delimiter=","):
         """
         Create a Data object from a file.
         """
-        df = pd.read_csv(file_name)
+        df = pd.read_csv(file_name, delimiter=delimiter)
         # print("_from_single_file -> df columns before preprocessing: ", df.columns)
         df = cls._preprocess(df, questions, preprocess, other_columns)
         # print("_from_single_file -> df columns AFTER preprocessing: ", df.columns)
@@ -88,21 +88,21 @@ class Data:
 
     @classmethod
     def from_pybossa(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
-                     task_info_file=None, task_file=None, field_task_key="info_media_0", other_columns=[]):
+                     task_info_file=None, task_file=None, field_task_key="info_media_0", other_columns=[], delimiter=","):
         """ 
         Create a Data object from a Pyossa file.
         """
 
         def get_tasks(t_csv, ti_csv, field_task_id, field_task_key):
-            t_df = pd.read_csv(t_csv)
+            t_df = pd.read_csv(t_csv, delimiter=delimiter)
             t_df = t_df[field_task_key]
-            ti_df = pd.read_csv(ti_csv)
+            ti_df = pd.read_csv(ti_csv, delimiter=delimiter)
             ti_df = ti_df[field_task_id]
             t_df = pd.merge(t_df, ti_df, left_index=True, right_index=True)
             # print("get_tasks {} {} ({}) -> \n{}".format("PyBossa", task_file, len(t_df.index), t_df))
             return t_df
 
-        df = pd.read_csv(file_name)
+        df = pd.read_csv(file_name, delimiter=delimiter)
         if task_info_file is not None:
             t_df = get_tasks(task_file, task_info_file, "task_id", field_task_key)
             df = pd.merge(df, t_df, how="left", left_on="task_id", right_on="task_id")
@@ -113,15 +113,15 @@ class Data:
         return cls.from_df(df, data_src=data_src, annotator_id_col_name="user_id", questions=questions, task_ids=task_ids, categories=categories)
 
     @classmethod
-    def from_mturk(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None, other_columns=[]):
+    def from_mturk(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None, other_columns=[], delimiter=","):
         """Create a Data object from an Amazon MTurk file."""
-        return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, categories, other_columns)
+        return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, categories, other_columns=other_columns, delimiter=delimiter)
 
     @classmethod
-    def from_aidr(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, other_columns=[]):
+    def from_aidr(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, other_columns=[], delimiter=","):
         """Create a Data object from an AIDR file."""
         # Note: Does NOT send 'categories' arg
-        return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, other_columns=other_columns)
+        return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, other_columns=other_columns, delimiter=delimiter)
 
     def set_questions(self, questions):
         self.questions = questions
