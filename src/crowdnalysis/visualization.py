@@ -138,32 +138,37 @@ def csv_description(consensus: np.ndarray, data: Data, question: str, picture_fi
     return val
 
 
-def html_description_crossed(consensus: np.ndarray, data: Data, question: str, pipeline_task_indices: List[int],
-                             picture_field: str, width=120, height=90,
-                             dec=3, warn_threshold=.1, output_file: str = None, pretty=True) -> str:
-    """Returns an HTML string that displays the images of tasks.
+def html_description_crossed(consensus: np.ndarray, data: Data, question: str, compare_task_indices: List[int],
+                             picture_field: str, lbl_outline: str, lbl_actor: str, included: bool = True,
+                             width=120, height=90, dec=3, warn_threshold=.1,
+                             output_file: str = None, pretty=True) -> str:
+    """Return an HTML string that displays the images of tasks. Outline the tasks which are [in/not in] the given list.
 
-    Optionally, saves the string to an HTML file.
+    Optionally, saves the string into an HTML file.
 
     Args:
         consensus: Consensus probabilities of tasks
         data : Annotation data
         question: Question for annotation
-        pipeline_task_indices: List of task indices of that were filtered by POLIMI Pipeline (i.e. not discarded ones)
+        compare_task_indices: List of task indices of to be compared with the tasks in the `consensus`
         picture_field: column name in the `Data.df` dataframe
+        lbl_outline: Label for the tasks whose `included` comparison results `True`
+        lbl_actor: The component who generated the `compare_task_indices` (e.g. POLIMI's pipeline)
+        included: If True, outlines the `consensus` tasks `ìn` the `compare_task_indices`;
+            otherwise, outlines `not in` tasks
         width: max image width
         height: max image height
         dec: number of decimal digits of probabilities to display
         warn_threshold: threshold difference between best and second best consensus probabilities to be marked
             as warning
-        output_file: (optional) full path to the output HTML file
+        output_file: (optional) full path to the output HTML file. If omitted, file is not saved.
         pretty: True, for a more human readable HTML string; False, for a smaller sized file.
 
     Returns:
         HTML string
 
     """
-    # TODO (OM, 20210115): Refactor to remove duplicate code inside 'html_description'?
+    # TODO (OM, 20210115): Refactor to remove duplicated code inside 'html_description'?
 
     FRAME_COLOR = "#ef0707"
     OUTLINE_COLOR = "orange"
@@ -186,7 +191,7 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
           padding: 2px;
           border: 6px solid {c};
         }}
-        .discarded{{
+        .outline{{
           outline: 3px solid {o};
         }}
         .summary{{
@@ -201,31 +206,33 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
              "- When these two probabilities have a difference &le; {t}, the image is framed with "
              "<span style='color:{c}; font-weight:bold'>borders</span> and marked as warning.<br/>"
              "- Otherwise, the image is regarded as 'good' (regardless of whether it is relevant or not).<br/>"
-             "- Images which were discarded by <em>POLIMI's pipeline</em> are "
+             "- Images which were <b>{m}</b> by <em>{a}</em> are "
              "<span style='color:{o}; font-weight:bold'>outlined</span>.<br/>"
-             "- Scroll horizontally to view all images.").format(t=warn_threshold, c=FRAME_COLOR, o=OUTLINE_COLOR)
+             "- Scroll horizontally to view all images.").format(t=warn_threshold, c=FRAME_COLOR, o=OUTLINE_COLOR,
+                                                                 a=lbl_actor, m=lbl_outline.lower())
     TITLE = "{} Consensus :: {}".format(data.data_src, question.title())
 
-    def label_info(n_warn_, n_discard_):
+    def label_info(n_warn_, n_outline_, msg_action):
         info_ = ""
         if n_warn_ > 0:
             info_ = "<span style='color:{c}'>{n}</span> warning{s}".format(
                 c=FRAME_COLOR, n=str(n_warn_), s="s" if n_warn_ > 1 else "")
-        if n_discard_ > 0:
+        if n_outline_ > 0:
             if info_:
                 info_ += ", "
-            info_ += "<span style='color:{o}'>{n}</span> discarded".format(
-                o=OUTLINE_COLOR, n=str(n_discard_))
+            info_ += "<span style='color:{o}'>{n}</span> {m}".format(
+                o=OUTLINE_COLOR, n=str(n_outline_), m=msg_action.lower())
         info_ = " ({})".format(info_)
         return info_
 
-    def make_summary(consensus_, data_, n_warn_total_, n_discard_good_total_, n_discard_warn_total_):
+    def make_summary(consensus_, data_, n_warn_total_, n_outline_good_total_, n_outline_warn_total_, msg_action):
         str_summary_ = ("Consensus Warnings: <span style='color:{c}'>{tw:.1%}</span><br/>"
-                        "Discarded Warnings: <span style='color:{o}'>{tdw:.1%}</span>, "
-                        "Discarded Good: <span style='color:{o}'>{tdg:.1%}</span>").format(
+                        "{m} Warnings: <span style='color:{o}'>{tdw:.1%}</span>, "
+                        "{m} Good: <span style='color:{o}'>{tdg:.1%}</span>").format(
             c=FRAME_COLOR, o=OUTLINE_COLOR, tw=n_warn_total_ / consensus_.shape[0],
-            tdw=0 if n_warn_total_ == 0 else n_discard_warn_total_/n_warn_total_,
-            tdg=n_discard_good_total_/(data_.n_tasks - n_warn_total_))
+            tdw=0 if n_warn_total_ == 0 else n_outline_warn_total_ / n_warn_total_,
+            tdg=n_outline_good_total_ / (data_.n_tasks - n_warn_total_),
+            m=msg_action.capitalize())
         return str_summary_
 
     best = np.argmax(consensus, axis=1)
@@ -242,16 +249,16 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
             summary_id = "summary"
             body.add(tags.h1("", id=summary_id, cls="summary"))
             n_warn_total = 0
-            n_discard_warn_total = 0
-            n_discard_good_total = 0
+            n_outline_warn_total = 0
+            n_outline_good_total = 0
             for label in labels:
                 task_indices = np.where(best == label)[0]
                 task_picture_links = data.get_field(task_indices, picture_field, unique=True)
                 label_id = "label" + str(label)
                 body.add(tags.h2("{} ({}):".format(str(label_names[label]).title(), len(task_indices)), id=label_id))
                 n_warn = 0
-                n_discard_warn = 0
-                n_discard_good = 0
+                n_outline_warn = 0
+                n_outline_good = 0
                 with body.add(tags.div(cls='labels')):
                     for ix, tpl in enumerate(task_picture_links):
                         l = tags.div(cls="task-image")
@@ -262,34 +269,34 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, p
                             label_names[li], p, dec) for p, li in probabilities[:2])
                         img_title = "Task Index: {}\n{}".format(str(task_index), probs_str)
                         is_warning = probabilities[0][0] - probabilities[1][0] <= warn_threshold
-                        is_discarded = task_index not in pipeline_task_indices
+                        is_outlined = (included == (task_index in compare_task_indices))
                         if is_warning:
                             n_warn += 1
                             kwargs = {"cls": "warn"}
                         else:
                             kwargs = {}
-                        if is_discarded:
+                        if is_outlined:
                             if is_warning:
-                                n_discard_warn += 1
+                                n_outline_warn += 1
                             else:
-                                n_discard_good += 1
-                            kwargs["cls"] = (kwargs.get("cls", "") + " discarded").lstrip()
+                                n_outline_good += 1
+                            kwargs["cls"] = (kwargs.get("cls", "") + " outline").lstrip()
                         l += tags.a(tags.img(src=tpl, title=img_title, **kwargs), href=tpl)
-                    n_discard = n_discard_warn + n_discard_good
-                    if n_warn + n_discard > 0:
+                    n_outline = n_outline_warn + n_outline_good
+                    if n_warn + n_outline > 0:
                         label_header = doc.body.getElementById(label_id)
-                        label_header.add_raw_string(label_info(n_warn, n_discard))
+                        label_header.add_raw_string(label_info(n_warn, n_outline, lbl_outline))
                 n_warn_total += n_warn
-                n_discard_warn_total += n_discard_warn
-                n_discard_good_total += n_discard_good
+                n_outline_warn_total += n_outline_warn
+                n_outline_good_total += n_outline_good
             summary_elm = doc.body.getElementById(summary_id)
             summary_elm.add_raw_string(make_summary(consensus, data, n_warn_total,
-                                                    n_discard_good_total, n_discard_warn_total))
+                                                    n_outline_good_total, n_outline_warn_total, lbl_outline))
 
     html_str = doc.render(pretty=pretty, xhtml=True)
     if output_file:
         with open(output_file, 'w') as f:
             f.write(html_str)
-        print("HTML for the {} 'consensus vs pipeline filter' for the question '{}' is saved into file:\n '{}'".format(
-            data.data_src, question, os.path.relpath(output_file)))
+        print("HTML for the {s} '{q}' consensus vs {a}-{m} tasks is saved into:\n'{f}'".format(
+            s=data.data_src, q=question, a=lbl_actor, m=lbl_outline, f=os.path.relpath(output_file)))
     return html_str
