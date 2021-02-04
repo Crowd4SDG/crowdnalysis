@@ -24,14 +24,17 @@ def fleiss_kappa(d: Data, question: str) -> float:
     return kappa
 
 
-def gen_fleiss_kappa(d: Data, question: str, w: np.ndarray=None) -> float:
-    """Return Fleiss' kappa value for the annotation data"""
+def fleiss_gen_kappa(d: Data, question: str, w: np.ndarray=None) -> float:
+    """Return Fleiss' generalized kappa value for the annotation data
+
+    ref: Gwet KL. (2014) Handbook of Inter-Rater Reliability.
+    """
     n, *_ = get_n_and_ranges(d, question)
-    kappa = _gen_fleiss_kappa(n, w)
+    kappa = _fleiss_gen_kappa(n, w)
     return kappa
 
 
-def _gen_fleiss_kappa(r, w=None):
+def _fleiss_gen_kappa(r, w=None):
     # r[i][l] -> number of raters that assigned item i to category l
     n, q = r.shape
     if w is None:
@@ -55,7 +58,7 @@ def _gen_fleiss_kappa(r, w=None):
 
 
 def full_agreement_percentage(d: Data, question: str) -> float:
-    """Return the percentage of all annotations for the question"""
+    """Return the percentage of annotations for the `question` where all annotators agreed on the same answer"""
     n, I, *_ = get_n_and_ranges(d, question)
     best_count = np.amax(n, axis=1)
     pct = np.sum(np.sum(n, axis=1) == best_count) / I
