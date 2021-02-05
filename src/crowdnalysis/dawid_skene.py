@@ -1,9 +1,8 @@
 import numpy as np
 
 from . import consensus
-from .data import Data
 from .probabilistic import Probabilistic
-from .majority_voting import MajorityVoting
+from .common import vprint
 
 
 class DawidSkene(consensus.GenerativeAbstractConsensus):
@@ -52,13 +51,12 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
             has_converged = np.allclose(old_T, self.T, atol=tolerance)
             num_iterations += 1
             any_nan = (np.isnan(self.T).any() or np.isnan(self.p).any() or np.isnan(self.logpi).any())
-        if verbose:
-            if any_nan:
-                print("NaN values detected")
-            elif has_converged:
-                print("DS has converged in", num_iterations, "iterations")
-            else:
-                print("The maximum of", max_iterations, "iterations has been reached")
+        if any_nan:
+            vprint("NaN values detected", verbose=verbose)
+        elif has_converged:
+            vprint("DS has converged in", num_iterations, "iterations", verbose=verbose)
+        else:
+            vprint("The maximum of", max_iterations, "iterations has been reached", verbose=verbose)
         # print("\np {}:\n{}, \npi {}:\n{},\nT {}:\n{}".format(self.p.shape, self.p, self.logpi.shape, np.exp(self.logpi), self.T.shape, self.T))
         
         return self.T, self._make_parameter_dict()
