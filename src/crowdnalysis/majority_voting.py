@@ -11,7 +11,7 @@ class MajorityVoting(consensus.AbstractConsensus):
         pass
 
     @classmethod
-    def m_fit_and_compute_consensus(cls, m, I, J, K=None):
+    def m_fit_and_compute_consensus(cls, m, I, J, K=None, **kwargs):
         n = cls.compute_counts(m, I, J)
         # print(n)
         best_count = np.amax(n, axis=1)

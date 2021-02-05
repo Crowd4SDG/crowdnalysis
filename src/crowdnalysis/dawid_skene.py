@@ -16,7 +16,7 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
         self.p = None
         self.logpi = None
 
-    def m_fit_and_compute_consensus(self, m, I, J, K, max_iterations=10000, tolerance=1e-3, prior=1.0):
+    def m_fit_and_compute_consensus(self, m, I, J, K, max_iterations=10000, tolerance=1e-3, prior=1.0, verbose=False):
         self.n = self._compute_n(m, I, J, K)
         # ("n:\n{}", self.n)
         # print("First estimate of T ({}) by probabilistic consensus:\n".format(str(self.T.shape)), self.T)
@@ -52,12 +52,13 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
             has_converged = np.allclose(old_T, self.T, atol=tolerance)
             num_iterations += 1
             any_nan = (np.isnan(self.T).any() or np.isnan(self.p).any() or np.isnan(self.logpi).any())
-        if any_nan:
-            print("NaN values detected")
-        elif has_converged:
-            print("DS has converged in", num_iterations, "iterations")
-        else:
-            print("The maximum of", max_iterations, "iterations has been reached")
+        if verbose:
+            if any_nan:
+                print("NaN values detected")
+            elif has_converged:
+                print("DS has converged in", num_iterations, "iterations")
+            else:
+                print("The maximum of", max_iterations, "iterations has been reached")
         # print("\np {}:\n{}, \npi {}:\n{},\nT {}:\n{}".format(self.p.shape, self.p, self.logpi.shape, np.exp(self.logpi), self.T.shape, self.T))
         
         return self.T, self._make_parameter_dict()
