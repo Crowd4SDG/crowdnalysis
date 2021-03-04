@@ -9,6 +9,9 @@ class Data:
     - to a set of tasks, 
     - each task with the very same questions.
     """
+
+    COL_TASK_INDEX = "task_index"  # column name in Data.df
+
     def __init__(self):
         """
         The Data object must not be initialized by constructor. 
@@ -54,7 +57,7 @@ class Data:
         #print(t==task_ids)
         d.set_task_ids(task_ids)
         inverse = np.vectorize(d.task_index_from_id.get)(np_task_ids)
-        df["task_index"] = inverse
+        df[cls.COL_TASK_INDEX] = inverse
 
         #print(df[annotator_id_col_name].to_numpy())
         annotator_ids, inverse = np.unique(df[annotator_id_col_name].to_numpy(), return_inverse=True)
@@ -152,7 +155,7 @@ class Data:
         return len(self.df[question].cat.categories)
 
     def get_question_matrix(self, question):
-        df = self.df[["task_index", "annotator_index", question+"_index"]]
+        df = self.df[[self.COL_TASK_INDEX, "annotator_index", question+"_index"]]
         #print(df[question].cat.codes)
         #df[question] = df[question].cat.codes
         return df.to_numpy()
@@ -177,9 +180,9 @@ class Data:
         Returns:
             np.ndarray: `field` values corresponding to and in the order of the given `task_indices`.
         """
-        df_vals = self.df[self.df.task_index.isin(task_indices)][["task_index", field]]  # .isin() loses the order
-        df_ind = pd.DataFrame(task_indices, columns=["task_index"])
-        df_vals = df_ind.merge(df_vals, how="left", left_on="task_index", right_on="task_index")  # Preserve the order
+        df_vals = self.df[self.df.task_index.isin(task_indices)][[self.COL_TASK_INDEX, field]]  # .isin() loses the order
+        df_ind = pd.DataFrame(task_indices, columns=[self.COL_TASK_INDEX])
+        df_vals = df_ind.merge(df_vals, how="left", left_on=self.COL_TASK_INDEX, right_on=self.COL_TASK_INDEX)  # Preserve the order
         df_vals = df_vals[field]
         if unique:
             df_vals = df_vals.drop_duplicates()
