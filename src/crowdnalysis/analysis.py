@@ -47,9 +47,9 @@ def compare_data_to_consensus(d_base, d_compare, base_consensuses, question, add
     df_out.drop([data.Data.COL_TASK_INDEX], axis=1, inplace=True)
     df_out = df_out.groupby([question]).sum()
     if add_total_cols:
-        df_out["Total Consensus"] = df_out.sum(axis=1)
+        # df_out["Total Consensus"] = df_out.sum(axis=1)
         df_count_compare = pd.DataFrame(d_compare.df[question], columns=[question])
-        df_out["Total Compared"] = df_count_compare.groupby([question]).size()
+        df_out["Total"] = df_count_compare.groupby([question]).size()
     return df_out
 
 
