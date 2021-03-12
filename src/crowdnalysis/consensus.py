@@ -97,19 +97,18 @@ class AbstractConsensus:
 
 class GenerativeAbstractConsensus(AbstractConsensus):
 
-    def sample_real_labels(self, I, parameters=None):
+    def sample_tasks(self, I, parameters=None):
         """
 
         Args:
             I: number of tasks
-            num_annotators: number of annotators
 
         Returns:
-            Tuple[numpy.ndarray]:
+            numpy.ndarray:
         """
         return NotImplementedError
 
-    def generate_crowd_labels(self, real_labels, num_annotations_per_task, parameters=None):
+    def sample_annotations(self, real_labels, num_annotations_per_task, parameters=None):
         """
 
         Args:
@@ -132,16 +131,16 @@ class GenerativeAbstractConsensus(AbstractConsensus):
         Returns:
             Tuple[numpy.ndarray, numpy.ndarray]:
         """
-        real_labels = self.sample_real_labels(I, parameters)
-        crowd_labels = self.generate_crowd_labels(real_labels, num_annotations_per_task, parameters)
+        real_labels = self.sample_tasks(I, parameters)
+        crowd_labels = self.sample_annotations(real_labels, num_annotations_per_task, parameters)
         return real_labels, crowd_labels
 
     def linked_samples(self, real_parameters, crowds_parameters, I, num_annotations_per_task):
-        real_labels = self.sample_real_labels(I, parameters=real_parameters)
+        real_labels = self.sample_tasks(I, parameters=real_parameters)
         crowds_labels= {}
         for crowd_name, parameters in crowds_parameters.items():
-            crowds_labels[crowd_name] = self.generate_crowd_labels(real_labels, num_annotations_per_task,
-                                                                   parameters=parameters)
+            crowds_labels[crowd_name] = self.sample_annotations(real_labels, num_annotations_per_task,
+                                                                parameters=parameters)
         return real_labels, crowds_labels
 
     def compute_consensuses(self, crowds_labels, model, I, J, K, **kwargs):

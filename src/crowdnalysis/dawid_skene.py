@@ -77,7 +77,7 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
 
     # Methods from GenerativeAbstractConsensus
 
-    def sample_real_labels(self, I, parameters=None):
+    def sample_tasks(self, I, parameters=None):
         """
 
         Args:
@@ -93,7 +93,7 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
         # Sample the real labels
         return np.random.choice(J, size=I, p=p)
 
-    def generate_crowd_labels(self, real_labels, num_annotations_per_task, parameters=None):
+    def sample_annotations(self, real_labels, num_annotations_per_task, parameters=None):
         """
 
         Args:
