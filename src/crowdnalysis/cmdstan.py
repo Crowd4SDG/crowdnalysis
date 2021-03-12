@@ -5,9 +5,6 @@ import numpy as np
 from cmdstanpy import CmdStanModel, CmdStanMLE, CmdStanMCMC
 
 from . import consensus
-from .data import Data
-
-import pickle
 
 
 def _parse_var_dims_and_index_ranges(names: Tuple[str, ...]) -> Dict:
@@ -43,12 +40,6 @@ def _get_var_dict(results: CmdStanMLE):
                 }
     return var_dict
 
-#with importlib.resources.path("crowdnalysis", "Multinomial.sample_annotations.stan") as path_:
-#    MULTINOMIAL_STAN_PATH = str(path_)
-#with importlib.resources.path("crowdnalysis", "HDS-NC.stan") as path_:
-#    HDS_STAN_PATH = str(path_)
-
-# TODO (OM, 20201210): Beautify above code
 with irpath(__package__, __name__.split('.')[-1]) as path_:
     resources_path = path_
 
@@ -82,36 +73,8 @@ class AbstractStanOptimizeConsensus(consensus.GenerativeAbstractConsensus):
     def MLE_parameters(self, results: CmdStanMLE):
         return {var_name: results.optimized_params_dict[var_name] for var_name in self.hidden_variables}
 
-    # def reduce_num_annotators(self, jj, minim_an):
-    #     """
-    #
-    #     Args:
-    #         jj(np.array): annotators of each annotation
-    #         minim_an (int): minimum number of annotations for annotators to be considered independent
-    #
-    #     Returns:
-    #         jj (np.array): new list of annotators of each annotation
-    #
-    #     """
-    #     N = len(jj)
-    #     print('old J: '+ str(len(np.unique(jj))))
-    #     new_label = N+1
-    #
-    #     b, c = np.unique(jj, return_counts=True)  # b is a list of single annotators and c its number of annotations
-    #     for i in range(len(c)):
-    #         if c[i] >= minim_an:
-    #             jj[np.where(jj == b[i])[0]] = new_label
-    #             new_label += 1
-    #     for i in range(N):
-    #         if jj[i] < N + 1:
-    #             jj[i] = new_label
-    #     jj[:] -= N
-    #     print('new J: ' +str(len(np.unique(jj))))
-    #     return jj
-
     def fit_and_compute_consensus_model(self):
         return CmdStanModel(stan_file=resource_filename(self.model_name + ".fit_and_consensus.stan"))
-
 
     def m_fit_and_compute_consensus(self, m, I, J, K, **kwargs):
         """Fits the model parameters and computes the consensus.
@@ -220,6 +183,115 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         #args = {"iter": 2000}
         args = {'algorithm': 'LBFGS',
                 'init_alpha': 0.01,
+                'output_dir': "."}
+        return stan_data, init_params, args
+
+    def sample_tasks(self, I, parameters=None):
+        """
+
+        Args:
+            I: number of tasks
+
+        Returns:
+            numpy.ndarray:
+        """
+        model = self.sample_tasks_model()
+        sample = model.sample(data={'t': I, 'k': len(parameters['tau'])},
+                     inits=parameters,
+                     fixed_param=True,
+                     iter_sampling=1)
+        t_C = sample.stan_variable('t_C').to_numpy(dtype=int)[0]-1
+        return t_C
+
+
+    def sample_annotations(self, real_labels, num_annotations_per_task, parameters=None):
+        """
+
+        Args:
+            real_labels (numpy.ndarray): 1D array with dimension (I)
+            num_annotations_per_task (int):number of annotations per task
+
+        Returns:
+            numpy.ndarray: 2D array with dimensions (I * num_annotations_per_task, 3)
+
+        """
+        model = self.sample_annotations_model()
+        sample = model.sample(data={'w': 1,
+                                    't': len(real_labels),
+                                    'num_annotations_per_task': num_annotations_per_task,
+                                    'k': len(parameters['tau']),
+                                    't_C': real_labels+1},
+                              inits=parameters,
+                              fixed_param=True,
+                              iter_sampling=1)
+        m = np.zeros((num_annotations_per_task * len(real_labels), 3), dtype=int)
+        m[:, 0] = sample.stan_variable('t_A').to_numpy(dtype=int)[0] - 1
+        m[:, 1] = sample.stan_variable('w_A').to_numpy(dtype=int)[0] - 1
+        m[:, 2] = sample.stan_variable('ann').to_numpy(dtype=int)[0] - 1
+
+        return m
+        
+        
+class StanMultinomial2OptimizeConsensus(AbstractStanOptimizeConsensus):
+
+    name = "StanMultinomial2Optimize"
+
+    def __init__(self):
+        AbstractStanOptimizeConsensus.__init__(self, "Multinomial2")
+
+    def map_data_to_model(self, m, I, J, K):
+        """
+
+                Args:
+                    m (np.ndarray): question matrix
+                    I (int): number of tasks
+                    J (int): number of labels
+                    K (int): number of annotators
+
+                Returns:
+                    stan_data (): data in stan format
+                    init_data (): initial values for error matrices in stan format
+
+                """
+
+        def tau_prior(ann, t_A, t, k, alpha=1.):
+            # ct = np.zeros(t,k)
+            unique, counts = np.unique(ann, return_counts=True)
+            tp = np.ones(k)
+            for i, x in enumerate(unique):
+                tp[x - 1] += counts[i]
+            tp /= np.sum(tp)
+            return alpha * tp
+
+        def pi_prior(k, alpha=1, beta=10):
+            return np.ones((k, k)) * alpha + np.identity(k) * beta
+
+        t_A =  m[:, 0] + 1
+        w_A = m[:, 1] + 1
+        ann = m[:, 2] + 1
+        t = I
+        w = K
+        k = J
+        a = m.shape[0]
+        tau_prior_ = tau_prior(ann, t_A, t, k, 5.)
+        min_pi_prior_ = np.zeros((k, k-1))
+        max_pi_prior_ = np.ones((k, k-1)) * 5
+
+        stan_data = {'w': w,
+                     't': t,
+                     'a': a,
+                     'k': k,
+                     't_A': t_A,
+                     'w_A': w_A,
+                     'ann': ann,
+                     'tau_prior': tau_prior_,
+                     'min_pi_prior': min_pi_prior_,
+                     'max_pi_prior': max_pi_prior_}
+        print(stan_data)
+        init_params = {'tau': tau_prior(ann, t_A, t, k, alpha=1.),
+                       'eta' : np.ones((k,k-1))}
+        #args = {"iter": 2000}
+        args = {'algorithm': 'LBFGS',
                 'output_dir': "."}
         return stan_data, init_params, args
 
