@@ -2,7 +2,7 @@ from importlib.resources import path as irpath
 from typing import Any, Dict, Tuple
 
 import numpy as np
-from cmdstanpy import CmdStanModel, CmdStanMLE, CmdStanMCMC
+from cmdstanpy import CmdStanModel, CmdStanMLE
 
 from . import consensus
 
@@ -68,6 +68,39 @@ class AbstractStanOptimizeConsensus(consensus.GenerativeAbstractConsensus):
             Dict[str, Any]: A dictionary of keyword arguments to pass to the `StanModel.optimizing` method
 
         """
+
+        d = self.map_data_to_data(m, I, J, K, **kwargs)
+        return d,\
+               self.map_data_to_parameters(**d, **kwargs), \
+               self.map_data_to_args(**d, **kwargs)
+
+    def map_data_to_data(self, m, I, J, K, **kwargs):
+        t_A = m[:, 0] + 1
+        w_A = m[:, 1] + 1
+        ann = m[:, 2] + 1
+        t = I
+        w = K
+        k = J
+        a = m.shape[0]
+
+        stan_data = {'w': w,
+                     't': t,
+                     'a': a,
+                     'k': k,
+                     't_A': t_A,
+                     'w_A': w_A,
+                     'ann': ann }
+        prior = self.map_data_to_prior(**stan_data, **kwargs)
+        stan_data.update(prior)
+        return stan_data
+
+    def map_data_to_prior(self, **kwargs):
+        raise NotImplementedError
+
+    def map_data_to_parameters(self, **kwargs):
+        raise NotImplementedError
+
+    def map_data_to_args(self, **kwargs):
         raise NotImplementedError
 
     def MLE_parameters(self, results: CmdStanMLE):
@@ -124,6 +157,7 @@ class AbstractStanOptimizeConsensus(consensus.GenerativeAbstractConsensus):
         return CmdStanModel(stan_file=resource_filename(self.model_name + ".sample_annotations.stan"))
 
 
+
 class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
 
     name = "StanMultinomialOptimize"
@@ -131,60 +165,34 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "Multinomial")
 
-    def map_data_to_model(self, m, I, J, K):
-        """
+    def tau_prior(self, ann, k, alpha=1.):
+        unique, counts = np.unique(ann, return_counts=True)
+        tp = np.ones(k)
+        for i, x in enumerate(unique):
+            tp[x - 1] += counts[i]
+        tp /= np.sum(tp)
+        return alpha * tp
 
-                Args:
-                    m (np.ndarray): question matrix
-                    I (int): number of tasks
-                    J (int): number of labels
-                    K (int): number of annotators
+    def pi_prior(self, k, alpha=1, beta=10):
+        return np.ones((k, k)) * alpha + np.identity(k) * beta
 
-                Returns:
-                    stan_data (): data in stan format
-                    init_data (): initial values for error matrices in stan format
+    def map_data_to_prior(self, k, ann, **kwargs):
+        tau_prior_ = self.tau_prior(ann, k, 5.)
+        pi_prior_ = self.pi_prior(k)
 
-                """
+        return {"tau_prior" : tau_prior_,
+                "pi_prior"  : pi_prior_}
 
-        def tau_prior(ann, t_A, t, k, alpha=1.):
-            # ct = np.zeros(t,k)
-            unique, counts = np.unique(ann, return_counts=True)
-            tp = np.ones(k)
-            for i, x in enumerate(unique):
-                tp[x - 1] += counts[i]
-            tp /= np.sum(tp)
-            return alpha * tp
+    def map_data_to_parameters(self, ann, k, **kwargs):
+        pi_prior_ = self.pi_prior(k)
+        return {'tau': self.tau_prior(ann, k, alpha=1.),
+                'pi': pi_prior_/np.sum(pi_prior_[0])}
 
-        def pi_prior(k, alpha=1, beta=10):
-            return np.ones((k, k)) * alpha + np.identity(k) * beta
-
-        t_A =  m[:, 0] + 1
-        w_A = m[:, 1] + 1
-        ann = m[:, 2] + 1
-        t = I
-        w = K
-        k = J
-        a = m.shape[0]
-        tau_prior_ = tau_prior(ann, t_A, t, k, 5.)
-        pi_prior_ = pi_prior(k, beta=20)
-
-        stan_data = {'w': w,
-                     't': t,
-                     'a': a,
-                     'k': k,
-                     't_A': t_A,
-                     'w_A': w_A,
-                     'ann': ann,
-                     'tau_prior': tau_prior_,
-                     'pi_prior': pi_prior_}
-        print(stan_data)
-        init_params = {'tau': tau_prior(ann, t_A, t, k, alpha=1.),
-                       'pi' : pi_prior_/np.sum(pi_prior_[0])}
+    def map_data_to_args(self, **kwargs):
         #args = {"iter": 2000}
-        args = {'algorithm': 'LBFGS',
+        return {'algorithm': 'LBFGS',
                 'init_alpha': 0.01,
                 'output_dir': "."}
-        return stan_data, init_params, args
 
     def sample_tasks(self, I, parameters=None):
         """
@@ -230,115 +238,33 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         m[:, 2] = sample.stan_variable('ann').to_numpy(dtype=int)[0] - 1
 
         return m
-        
-        
-class StanMultinomial2OptimizeConsensus(AbstractStanOptimizeConsensus):
+
+
+class StanMultinomial2OptimizeConsensus(StanMultinomialOptimizeConsensus):
 
     name = "StanMultinomial2Optimize"
 
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "Multinomial2")
 
-    def map_data_to_model(self, m, I, J, K):
-        """
-
-                Args:
-                    m (np.ndarray): question matrix
-                    I (int): number of tasks
-                    J (int): number of labels
-                    K (int): number of annotators
-
-                Returns:
-                    stan_data (): data in stan format
-                    init_data (): initial values for error matrices in stan format
-
-                """
-
-        def tau_prior(ann, t_A, t, k, alpha=1.):
-            # ct = np.zeros(t,k)
-            unique, counts = np.unique(ann, return_counts=True)
-            tp = np.ones(k)
-            for i, x in enumerate(unique):
-                tp[x - 1] += counts[i]
-            tp /= np.sum(tp)
-            return alpha * tp
-
-        def pi_prior(k, alpha=1, beta=10):
-            return np.ones((k, k)) * alpha + np.identity(k) * beta
-
-        t_A =  m[:, 0] + 1
-        w_A = m[:, 1] + 1
-        ann = m[:, 2] + 1
-        t = I
-        w = K
-        k = J
-        a = m.shape[0]
-        tau_prior_ = tau_prior(ann, t_A, t, k, 5.)
+    def map_data_to_prior(self, k, ann, **kwargs):
+        tau_prior_ = self.tau_prior(ann, k, 5.)
         min_pi_prior_ = np.zeros((k, k-1))
         max_pi_prior_ = np.ones((k, k-1)) * 5
 
-        stan_data = {'w': w,
-                     't': t,
-                     'a': a,
-                     'k': k,
-                     't_A': t_A,
-                     'w_A': w_A,
-                     'ann': ann,
-                     'tau_prior': tau_prior_,
-                     'min_pi_prior': min_pi_prior_,
-                     'max_pi_prior': max_pi_prior_}
-        print(stan_data)
-        init_params = {'tau': tau_prior(ann, t_A, t, k, alpha=1.),
-                       'eta' : np.ones((k,k-1))}
-        #args = {"iter": 2000}
-        args = {'algorithm': 'LBFGS',
-                'output_dir': "."}
-        return stan_data, init_params, args
+        return {'tau_prior': tau_prior_,
+                'min_pi_prior': min_pi_prior_,
+                'max_pi_prior': max_pi_prior_}
 
-    def sample_tasks(self, I, parameters=None):
-        """
+    def map_data_to_parameters(self, ann, k, **kwargs):
+        return {'tau': self.tau_prior(ann, k, alpha=1.),
+                'eta' : np.ones((k, k-1))}
 
-        Args:
-            I: number of tasks
+    #def map_data_to_args(self):
+    #    #args = {"iter": 2000}
+    #    return {'algorithm': 'LBFGS',
+    #            'output_dir': "."}
 
-        Returns:
-            numpy.ndarray:
-        """
-        model = self.sample_tasks_model()
-        sample = model.sample(data={'t': I, 'k': len(parameters['tau'])},
-                     inits=parameters,
-                     fixed_param=True,
-                     iter_sampling=1)
-        t_C = sample.stan_variable('t_C').to_numpy(dtype=int)[0]-1
-        return t_C
-
-
-    def sample_annotations(self, real_labels, num_annotations_per_task, parameters=None):
-        """
-
-        Args:
-            real_labels (numpy.ndarray): 1D array with dimension (I)
-            num_annotations_per_task (int):number of annotations per task
-
-        Returns:
-            numpy.ndarray: 2D array with dimensions (I * num_annotations_per_task, 3)
-
-        """
-        model = self.sample_annotations_model()
-        sample = model.sample(data={'w': 1,
-                                    't': len(real_labels),
-                                    'num_annotations_per_task': num_annotations_per_task,
-                                    'k': len(parameters['tau']),
-                                    't_C': real_labels+1},
-                              inits=parameters,
-                              fixed_param=True,
-                              iter_sampling=1)
-        m = np.zeros((num_annotations_per_task * len(real_labels), 3), dtype=int)
-        m[:, 0] = sample.stan_variable('t_A').to_numpy(dtype=int)[0] - 1
-        m[:, 1] = sample.stan_variable('w_A').to_numpy(dtype=int)[0] - 1
-        m[:, 2] = sample.stan_variable('ann').to_numpy(dtype=int)[0] - 1
-
-        return m
 # class StanHDSOptimizeConsensus(AbstractStanOptimizeConsensus):
 #     """ Hierarchical DS model"""
 #
@@ -355,3 +281,31 @@ class StanMultinomial2OptimizeConsensus(AbstractStanOptimizeConsensus):
 #         init_data = {"beta": init_beta}
 #         args = {"iter":2000}
 #         return stan_data, init_data, args
+
+class StanDSOptimizeConsensus(StanMultinomialOptimizeConsensus):
+
+    name = "StanDSOptimize"
+
+    def __init__(self):
+        AbstractStanOptimizeConsensus.__init__(self, "DS")
+
+    def map_data_to_prior(self, k, ann, **kwargs):
+        tau_prior_ = self.tau_prior(ann, k, 5.)
+        pi_prior_ = self.pi_prior(k)
+
+        return {"tau_prior": tau_prior_,
+                "pi_prior": pi_prior_}
+
+    def map_data_to_parameters(self, ann, k, w, **kwargs):
+        pi_prior_ = self.pi_prior(k)
+        pi_param_ = np.broadcast_to(pi_prior_ / np.sum(pi_prior_[0]), (w, k, k))
+        return {'tau': self.tau_prior(ann, k, alpha=1.),
+                'pi': pi_param_}
+
+    def map_data_to_args(self, **kwargs):
+        #args = {"iter": 2000}
+        return {'algorithm': 'LBFGS',
+                'init_alpha': 0.01,
+                'output_dir': "."}
+
+

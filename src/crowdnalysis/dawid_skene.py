@@ -12,7 +12,7 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
     def __init__(self):
         self.n = None
         self.T = None
-        self.p = None
+        self.tau = None
         self.logpi = None
 
     def m_fit_and_compute_consensus(self, m, I, J, K, max_iterations=10000, tolerance=1e-3, prior=1.0, verbose=False):
@@ -23,57 +23,57 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
         self.T, _ = Probabilistic.probabilistic_consensus(m, I, J, softening=prior)
 
         # Initialize the percentages of each label
-        self.p = self._m_step_p(self.T, prior)
-        # print("Initial percentages ({}) of each label:\n".format(str(self.p.shape)), self.p)
+        self.tau = self._m_step_p(self.T, prior)
+        # print("Initial percentages ({}) of each label:\n".format(str(self.tau.shape)), self.tau)
 
-        #print("p=", self.p)
+        #print("p=", self.tau)
 
         # Initialize the errors
         # _pi[k,j,l] (KxJxJ)
         self.logpi = self._m_step_logpi(self.T, self.n, prior)
-        #self.logpi = np.log(self.pi)
+        #self.logpi = np.log(self.taui)
         # print("Initial errors ({}):\n".format(str(np.exp(self.logpi).shape)), np.exp(self.logpi))
 
         #print("pi=", np.exp(self.logpi))
 
         has_converged = False
         num_iterations = 0
-        any_nan = (np.isnan(self.T).any() or np.isnan(self.p).any() or np.isnan(self.logpi).any())
+        any_nan = (np.isnan(self.T).any() or np.isnan(self.tau).any() or np.isnan(self.logpi).any())
         while (num_iterations < max_iterations and not has_converged) and not any_nan:
             # Expectation step
             old_T = self.T
-            self.T = self._e_step(self.n, self.logpi, self.p)
+            self.T = self._e_step(self.n, self.logpi, self.tau)
             # print("T=", self.T)
             # Maximization
-            self.p, self.logpi = self._m_step(self.T, self.n, prior)
-            # print("p=", self.p)
+            self.tau, self.logpi = self._m_step(self.T, self.n, prior)
+            # print("tau=", self.tau)
             # print("pi=", np.exp(self.logpi))
             has_converged = np.allclose(old_T, self.T, atol=tolerance)
             num_iterations += 1
-            any_nan = (np.isnan(self.T).any() or np.isnan(self.p).any() or np.isnan(self.logpi).any())
+            any_nan = (np.isnan(self.T).any() or np.isnan(self.tau).any() or np.isnan(self.logpi).any())
         if any_nan:
             vprint("NaN values detected", verbose=verbose)
         elif has_converged:
             vprint("DS has converged in", num_iterations, "iterations", verbose=verbose)
         else:
             vprint("The maximum of", max_iterations, "iterations has been reached", verbose=verbose)
-        # print("\np {}:\n{}, \npi {}:\n{},\nT {}:\n{}".format(self.p.shape, self.p, self.logpi.shape, np.exp(self.logpi), self.T.shape, self.T))
+        # print("\np {}:\n{}, \npi {}:\n{},\nT {}:\n{}".format(self.tau.shape, self.tau, self.logpi.shape, np.exp(self.logpi), self.T.shape, self.T))
         
         return self.T, self._make_parameter_dict()
 
     def m_fit(self, m, I, J, K, T, prior=1.0):
         n = self._compute_n(m, I, J, K)
-        p, logpi = self._m_step(T, n, prior)
-        return self._make_parameter_dict(p, logpi)
+        tau, logpi = self._m_step(T, n, prior)
+        return self._make_parameter_dict(tau, logpi)
 
     def m_compute_consensus(self, m, I, J, K, parameters):
         n = self._compute_n(m, I, J, K)
-        p, logpi = self._get_parameters_from_dict(parameters)
-        return self._e_step(n, logpi, p)
+        tau, _pi = self._get_parameters_from_dict(parameters)
+        return self._e_step(n, np.log(_pi), p)
 
     def get_dimensions(self, parameters):
-        p, _pi = self._get_parameters_from_dict(parameters)
-        return len(p), _pi.shape[0]
+        tau, _pi = self._get_parameters_from_dict(parameters)
+        return len(tau), _pi.shape[0]
 
     # Methods from GenerativeAbstractConsensus
 
@@ -105,7 +105,7 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
 
         """
         p, _pi = self._get_parameters_from_dict(parameters)
-        #print("_pi", _pi)
+        #print("pi", _pi)
         I = real_labels.shape[0]  # number of tasks
         J = len(p)
         K = _pi.shape[0]  #
@@ -140,18 +140,18 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
 
     def _get_parameters_from_dict(self, parameters):
         if parameters is None:
-            p = self.p
+            tau = self.tau
             _pi = np.exp(self.logpi)
         else:
-            p, _pi = parameters["p"], parameters["_pi"]
-        return p, _pi
+            tau, _pi = parameters["tau"], parameters["pi"]
+        return tau, _pi
 
-    def _make_parameter_dict(self, p=None, logpi=None):
-        if p is None:
-            p = self.p
+    def _make_parameter_dict(self, tau=None, logpi=None):
+        if tau is None:
+            tau = self.tau
         if logpi is None:
             logpi = self.logpi
-        return {"p": p, "_pi": np.exp(logpi)}
+        return {"tau": tau, "pi": np.exp(logpi)}
 
     def _compute_n(self, m, I, J, K):
         # TODO: This should be optimized
@@ -183,11 +183,11 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
         _pi /= sums[:, :, np.newaxis]
         return np.log(_pi)
 
-    def _e_step(self, n, logpi, p):
+    def _e_step(self, n, logpi, tau):
         # print("_e_step > n:\n{}\n logpi:\n{}\n p:\n{}".format(n, logpi, p))
         T = np.exp(np.tensordot(n, logpi, axes=([0, 2], [0, 2])))  # IxJ
         # print("_e_step > T after tensordot:\n{}", T)
-        T *= p[np.newaxis, :]
+        T *= tau[np.newaxis, :]
         # print("_e_step > T after T *= p:\n{}", T)
         T /= np.sum(T, axis=1)[:, np.newaxis]
         # print("_e_step > np.sum(T, axis=1)[:, np.newaxis]):\n{}", np.sum(T, axis=1)[:, np.newaxis])

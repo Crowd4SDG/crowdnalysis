@@ -26,23 +26,7 @@ transformed parameters {
   vector[k] log_p_t_C[t];
   vector[k] t_C[t]; //the true class distribution of each item
 
-  // Initialize with the prior
-  
-  log_p_t_C = rep_array(log(tau), t);
-  
-  // Update log_p_t_C with each of the annotations
-  
-  { 
-        // Make the log and transpose the emission matrix
-        vector [k] log_emission_t[k];
-        
-        log_emission_t = log_transpose(pi);
-                
-        // Update each task with the information contributed by its annotations 
-        
-        for (_a in 1:a)
-            log_p_t_C[t_A[_a]] += log_emission_t[ann[_a]];
-  }
+  log_p_t_C = multinomial_log_p_t_C(tau, pi, t, t_A, ann);
 
   // Compute the probabilities from the logs
 

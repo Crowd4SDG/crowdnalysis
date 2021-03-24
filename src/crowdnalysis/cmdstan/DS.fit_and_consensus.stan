@@ -13,33 +13,22 @@ data {
   int<lower=1,upper=w> w_A[a]; // the annotator which produced the n-th annotation
   int<lower=1,upper=k> ann[a]; // the annotation
   vector[k] tau_prior;
-  vector[k-1] min_pi_prior[k];
-  vector[k-1] max_pi_prior[k];
-}
-
-transformed data {
-  int dst[k,k-1];
-  dst = compute_movements(k);
+  vector[k] pi_prior[k];
 }
 
 parameters {
   simplex[k] tau;
-  vector<lower=0>[k-1] eta[k];
+  simplex[k] pi[w,k];
 }
 
 transformed parameters {
-  simplex[k] pi[k];
-
-  pi = softmax_diag(eta, dst);
-
-  // print("pi",pi);
   // log_p_t_C[_t][_k] is the log of the probability that t_C=_k for task _t 
   vector[k] log_p_t_C[t];
   vector[k] t_C[t]; //the true class distribution of each item
 
-  log_p_t_C = multinomial_log_p_t_C(tau, pi, t, t_A, ann);
+  log_p_t_C = ds_log_p_t_C(tau, pi, t, t_A, w_A, ann);
 
-  // Compute the probabilities from the logs (maybe this should move to generated quantities)
+  // Compute the probabilities from the logs
 
   for(_t in 1:t)
     t_C[_t] = softmax(log_p_t_C[_t]);
@@ -50,8 +39,10 @@ transformed parameters {
 model {
 
   // Prior over pi
-  for(_k in 1:k) {
-    eta[_k] ~ uniform(min_pi_prior[_k], max_pi_prior[_k]);
+  for(_w in 1:w) {
+    for(_k in 1:k) {
+      pi[_w,_k] ~ dirichlet(pi_prior[_k]);
+    }
   }
   
   // Prior over tau
