@@ -1,3 +1,4 @@
+.idea
 src/crowdnalysis/cmdstan/*consensus
 src/crowdnalysis/cmdstan/*fit
 src/crowdnalysis/cmdstan/*sample_annotations
