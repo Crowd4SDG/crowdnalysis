@@ -1,3 +1,8 @@
+src/crowdnalysis/cmdstan/*consensus
+src/crowdnalysis/cmdstan/*fit
+src/crowdnalysis/cmdstan/*sample_annotations
+src/crowdnalysis/cmdstan/*sample_tasks
+src/crowdnalysis/cmdstan/*hpp
 nb/*stdout.txt
 nb/*.csv
 

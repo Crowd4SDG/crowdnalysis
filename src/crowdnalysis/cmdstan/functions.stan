@@ -1,3 +1,14 @@
+real square_distance(vector p, vector q) {
+    return dot_product(p-q, p-q);
+}
+
+real kl(vector p, vector q) {
+    return dot_product(p , (log(p) - log(q)));
+}
+
+real jsd(vector p, vector q) {
+    return 0.5*kl(p,q)+0.5*kl(q,p);
+}
 
 vector[] log_transpose(vector[] m) {
     int k = size(m);
@@ -63,14 +74,14 @@ int [,] compute_movements(int k) {
             dst[_k][_i] = _i + (_i>=_k);
         }
     }
-    print(dst);
+    // print(dst);
     return dst;
 }
 
 vector[] softmax_diag(vector[] eta, int[,] dst) {
     int k = size(eta);
     vector[k] pi[k];
-    print("eta",eta);
+    // print("eta",eta);
     for (_k in 1:k) {
         pi[_k][dst[_k]] = -eta[_k];
         pi[_k][_k] = 0.;

@@ -139,18 +139,24 @@ class GenerativeAbstractConsensus(AbstractConsensus):
         real_labels = self.sample_tasks(I, parameters=real_parameters)
         crowds_labels= {}
         for crowd_name, parameters in crowds_parameters.items():
+            print("parameters:", parameters)
             crowds_labels[crowd_name] = self.sample_annotations(real_labels, num_annotations_per_task,
                                                                 parameters=parameters)
         return real_labels, crowds_labels
 
-    def compute_consensuses(self, crowds_labels, model, I, J, K, **kwargs):
+    def compute_consensuses(self, crowds_labels, model, I, J, K, crowd_parameters=None, **kwargs):
         crowds_consensus = {}
         for crowd_name, crowd_labels in crowds_labels.items():
-            crowds_consensus[crowd_name], _ = model.m_fit_and_compute_consensus(crowd_labels, I, J, K, **kwargs)
+            if crowd_parameters is None:
+                crowds_consensus[crowd_name], _ = model.m_fit_and_compute_consensus(crowd_labels, I, J, K, **kwargs)
+            else:
+                crowds_consensus[crowd_name], _ = model.m_fit_and_compute_consensus(
+                    crowd_labels, I, J, K, init_params=crowd_parameters[crowd_name],**kwargs)
+
         return crowds_consensus
 
     def evaluate_consensuses_on_linked_samples(self, real_parameters, crowds_parameters, models, measures, sample_sizes,
-                                               annotations_per_task, repeats, verbose=False):
+                                               annotations_per_task, repeats, verbose=False, init_params=False):
         J, K = self.get_dimensions(real_parameters)
         for I in sample_sizes:
             vprint("Sample size:", I, verbose=verbose)
@@ -161,15 +167,17 @@ class GenerativeAbstractConsensus(AbstractConsensus):
                     real_labels, crowds_labels = self.linked_samples(real_parameters, crowds_parameters, I, num_annotations_per_task)
                     for model_name, model in models.items():
                         vprint("...Model:", model_name, verbose=verbose)
-                        crowds_consensus = self.compute_consensuses(crowds_labels, model, I, J, K, verbose=verbose)
+                        crowds_consensus = self.compute_consensuses(crowds_labels, model, I, J, K,
+                                                                    crowds_parameters if init_params else None,
+                                                                    verbose=verbose)
                         for measure_name, measure in measures.items():
                             # vprint("....Measure:", measure_name, verbose=verbose)
                             crowds_evals = measure.evaluate_crowds(real_labels, crowds_consensus)
                             for crowd_name, eval_value in crowds_evals.items():
-                                yield {"num_samples":I,
-                                       "num_annotations_per_task":num_annotations_per_task,
+                                yield {"num_samples": I,
+                                       "num_annotations_per_task": num_annotations_per_task,
                                        "consensus_algorithm": model_name,
-                                       "repetition":repetition,
+                                       "repetition": repetition,
                                        "crowd_name": crowd_name,
                                        "measure": measure_name,
                                        "value": eval_value}

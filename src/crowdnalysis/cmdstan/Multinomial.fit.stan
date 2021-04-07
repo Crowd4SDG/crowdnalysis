@@ -29,12 +29,6 @@ parameters {
   simplex[k] pi[k];  
 }
 
-/*transformed parameters {
-  vector[k] tau2 = tau_prior + sum_t_C;
-  tau2 /= sum(tau2);
-}*/
-
-
 model{
 
   // Prior over pi

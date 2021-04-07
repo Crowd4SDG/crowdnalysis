@@ -77,6 +77,7 @@ def prospective_analysis(question, expert_data_src, expert_parameters, parameter
     """
     crowds_parameters = {name: parameters_others[name][question] for name in parameters_others}
     crowds_parameters[expert_data_src] = expert_parameters[question]
+    #print(expert_parameters[question])
     return pd.DataFrame.from_records(
         generative_model.evaluate_consensuses_on_linked_samples(
             expert_parameters[question], crowds_parameters, models, measures,

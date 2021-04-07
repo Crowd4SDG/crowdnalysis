@@ -240,12 +240,12 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         return m
 
 
-class StanMultinomial2OptimizeConsensus(StanMultinomialOptimizeConsensus):
+class StanMultinomialEtaOptimizeConsensus(StanMultinomialOptimizeConsensus):
 
-    name = "StanMultinomial2Optimize"
+    name = "StanMultinomialEtaOptimize"
 
     def __init__(self):
-        AbstractStanOptimizeConsensus.__init__(self, "Multinomial2")
+        AbstractStanOptimizeConsensus.__init__(self, "MultinomialEta")
 
     def map_data_to_prior(self, k, ann, **kwargs):
         tau_prior_ = self.tau_prior(ann, k, 5.)
@@ -302,10 +302,58 @@ class StanDSOptimizeConsensus(StanMultinomialOptimizeConsensus):
         return {'tau': self.tau_prior(ann, k, alpha=1.),
                 'pi': pi_param_}
 
-    def map_data_to_args(self, **kwargs):
-        #args = {"iter": 2000}
-        return {'algorithm': 'LBFGS',
-                'init_alpha': 0.01,
-                'output_dir': "."}
+
+class StanDSEtaOptimizeConsensus(StanDSOptimizeConsensus):
+        name = "StanDSEtaOptimize"
+
+        def __init__(self):
+            AbstractStanOptimizeConsensus.__init__(self, "DSEta")
+
+        def map_data_to_prior(self, k, ann, **kwargs):
+            tau_prior_ = self.tau_prior(ann, k, 5.)
+            min_pi_prior_ = np.zeros((k, k - 1))
+            max_pi_prior_ = np.ones((k, k - 1)) * 5
+
+            return {'tau_prior': tau_prior_,
+                    'min_pi_prior': min_pi_prior_,
+                    'max_pi_prior': max_pi_prior_}
+
+        def map_data_to_parameters(self, ann, k, w, **kwargs):
+            return {'tau': self.tau_prior(ann, k, alpha=1.),
+                    'eta': np.ones((w, k, k - 1))}
+
+        def map_data_to_args(self, **kwargs):
+            # args = {"iter": 2000}
+            return {'algorithm': 'LBFGS',
+                    'init_alpha': 0.01,
+                    'output_dir': "."}
+
+class StanDSEtaHOptimizeConsensus(StanDSOptimizeConsensus):
+        name = "StanDSEtaHOptimize"
+
+        def __init__(self):
+            AbstractStanOptimizeConsensus.__init__(self, "DSEtaH")
+
+        def map_data_to_prior(self, k, ann, **kwargs):
+            tau_prior_ = self.tau_prior(ann, k, 5.)
+            min_pi_prior_ = np.zeros((k, k - 1))
+            max_pi_prior_ = np.ones((k, k - 1)) * 5
+
+            return {'tau_prior': tau_prior_,
+                    'min_pi_prior': min_pi_prior_,
+                    'max_pi_prior': max_pi_prior_}
+
+        def map_data_to_parameters(self, ann, k, w, **kwargs):
+            pi_prior_ = self.pi_prior(k)
+            pi_param_ = np.broadcast_to(pi_prior_ / np.sum(pi_prior_[0]), (w, k, k))
+            return {'tau': self.tau_prior(ann, k, alpha=1.),
+                    'eta': np.ones((k, k - 1)),
+                    'pi': pi_param_}
+
+        def map_data_to_args(self, **kwargs):
+            # args = {"iter": 2000}
+            return {'algorithm': 'LBFGS',
+                    'init_alpha': 0.01,
+                    'output_dir': "."}
 
 
