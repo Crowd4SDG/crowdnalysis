@@ -4,8 +4,7 @@ from . import consensus
 from . import dawid_skene
 from . import majority_voting
 from . import probabilistic
-from . import stan
-
+from . import cmdstan
 
 class Factory:
     """Factory class for consensus algorithms"""
@@ -49,6 +48,8 @@ class Factory:
 Factory.register_consensus_algorithm(majority_voting.MajorityVoting)
 Factory.register_consensus_algorithm(probabilistic.Probabilistic)
 Factory.register_consensus_algorithm(dawid_skene.DawidSkene)
-Factory.register_consensus_algorithm(stan.StanDSOptimizeConsensus)
-# Factory.register_consensus_algorithm(stan.StanHDSOptimizeConsensus)
-# Factory.register_consensus_algorithm(stan.StanDSSampleConsensus)
+Factory.register_consensus_algorithm(cmdstan.StanMultinomialOptimizeConsensus)
+Factory.register_consensus_algorithm(cmdstan.StanMultinomialEtaOptimizeConsensus)
+Factory.register_consensus_algorithm(cmdstan.StanDSOptimizeConsensus)
+Factory.register_consensus_algorithm(cmdstan.StanDSEtaOptimizeConsensus)
+Factory.register_consensus_algorithm(cmdstan.StanDSEtaHOptimizeConsensus)

@@ -8,13 +8,13 @@ from .data import Data
 
 
 def get_n_and_ranges(d: Data, question: str) -> Tuple[np.ndarray, int, int, int]:
-    """Return 2D (I, J) annotation count matrix `n`, and I, J, K values
+    """Return 2D (n_tasks, n_labels) annotation count matrix `n`, and n_tasks, n_labels, n_annotators values
 
-    where I: # of tasks, J: # of labels, K: # of annotators
+    where n_tasks: # of tasks, n_labels: # of labels, n_annotators: # of annotators
     """
-    m, I, J, K = AbstractConsensus.get_question_matrix_and_ranges(d, question)
-    n = AbstractConsensus.compute_counts(m, I, J)
-    return n, I, J, K
+    dcp = AbstractConsensus.get_problem(d, question)
+    n = AbstractConsensus.compute_counts(dcp.m, dcp.n_tasks, dcp.n_labels)
+    return n, dcp.n_tasks, dcp.n_labels, dcp.n_annotators
 
 
 def fleiss_kappa(d: Data, question: str) -> float:
@@ -59,7 +59,7 @@ def _fleiss_gen_kappa(r, w=None):
 
 def full_agreement_percentage(d: Data, question: str) -> float:
     """Return the percentage of annotations for the `question` where all annotators agreed on the same answer"""
-    n, I, *_ = get_n_and_ranges(d, question)
+    n, n_tasks, *_ = get_n_and_ranges(d, question)
     best_count = np.amax(n, axis=1)
-    pct = np.sum(np.sum(n, axis=1) == best_count) / I
+    pct = np.sum(np.sum(n, axis=1) == best_count) / n_tasks
     return pct
