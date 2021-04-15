@@ -2,16 +2,64 @@ import numpy as np
 
 from .common import vprint
 from .data import Data
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 @dataclass
-class DiscreteConsensusProblem:
-    m: Optional[np.ndarray] = None
-    n_tasks: int = 100
-    n_labels: int = 2
-    n_annotators: int = 1
+class ConsensusProblem:
+    n_tasks: Optional[int] = field(default=None)
+    # features of the tasks
+    tasks: Optional[np.ndarray] = None
+    n_workers: Optional[int] = field(default=None)
+    # features of the workers
+    workers: Optional[np.ndarray] = None
+    n_annotations: int = field(init=False)
+    # features of each of the annotations
+    annotations: np.ndarray = np.array([])
+
+    def __post_init__(self):
+        self.n_annotations = self.annotations.shape[0]
+        if self.n_tasks is None:
+            if self.tasks is None:
+                raise Exception("Undetermined number of tasks")
+            else:
+                self.n_tasks = self.tasks.shape[0]
+        if self.n_workers is None:
+            if self.workers is None:
+                raise Exception("Undetermined number of workers")
+            else:
+                self.n_workers = self.workers.shape[0]
+
+"""
+The DiscreteConsensusProblem enforces that:
+- There is a discrete set of real classes
+- There is a single attribute of each annotation, 
+  which is also discrete and which at least contains the real_classes.
+  It can eventually contain additional answers such as "I do not know", or "in doubt", or "does not apply"
+"""
+@dataclass
+class DiscreteConsensusProblem(ConsensusProblem):
+    # number of different labels in the annotation
+    n_labels: Optional[int] = None
+    # Which labels in an annotation correspond to real hidden classes
     classes: Optional[List[int]] = None
+
+    def __post_init__(self):
+        ConsensusProblem.__post_init__(self)
+        if self.n_labels is None:
+            self.n_labels = np.unique(self.annotations[:, 0])
+        if self.classes is None:
+            self.classes = list(range(self.n_labels))
+
+"""
+This dataclass should be subclassed by each of the different models used to compute consensus
+"""
+@dataclass
+class Parameters:
+    pass
+
+
+
 
 class AbstractConsensus:
     """ Base class for a consensus algorithm."""
@@ -47,7 +95,7 @@ class AbstractConsensus:
         dcp = self.get_problem(d, question)
         return self.m_fit_and_compute_consensus(dcp, **kwargs)
 
-    def m_fit_and_compute_consensus(self, dcp:DiscreteConsensusProblem, **kwargs):
+    def m_fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs):
         # TODO (OM, 20201210): A return class for model parameters instead of dictionary
         raise NotImplementedError
 
@@ -77,61 +125,50 @@ class AbstractConsensus:
         dcp = self.get_problem(d, question)
         return self.m_compute_consensus(dcp, parameters)
 
-    def m_compute_consensus(self, dcp: DiscreteConsensusProblem, n_classes, parameters):
+    def m_compute_consensus(self, dcp: DiscreteConsensusProblem, parameters):
         """ Computes the consensus with a fixed pre-determined set of parameters.
 
         returns consensus """
         raise NotImplementedError
 
 
+"""
+This dataclass should be subclassed by each of the different generative consensus models
+"""
+@dataclass
+class DataGenerationParameters:
+    pass
+
 class GenerativeAbstractConsensus(AbstractConsensus):
 
-    def sample_tasks(self, n_tasks, parameters=None):
-        """
-
-        Args:
-            n_tasks: number of tasks
-
-        Returns:
-            numpy.ndarray:
-        """
+    def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
         return NotImplementedError
 
-    def sample_annotations(self, real_labels, num_annotations_per_task, parameters=None):
-        """
+    def sample_workers(self, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
+        return NotImplementedError
 
-        Args:
-            real_labels (numpy.ndarray): 1D array with dimension (n_tasks)
-            num_annotations_per_task (int):number of annotations per task
-
-        Returns:
-            numpy.ndarray: 2D array with dimensions (n_tasks * num_annotations_per_task, 3)
-
-        """
+    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
         raise NotImplementedError
 
-    def sample(self, n_tasks, num_annotations_per_task, parameters=None):
-        """
+    def sample(self, dgp:DataGenerationParameters, parameters: Optional[Parameters] = None):
+        tasks = self.sample_tasks(dgp, parameters)
+        workers = self.sample_workers(dgp, parameters)
+        crowd_labels = self.sample_annotations(tasks, workers, dgp, parameters)
+        return tasks, workers, crowd_labels
 
-        Args:
-            n_tasks: number of tasks
-            num_annotators: number of annotators
-
-        Returns:
-            Tuple[numpy.ndarray, numpy.ndarray]:
-        """
-        real_labels = self.sample_tasks(n_tasks, parameters)
-        crowd_labels = self.sample_annotations(real_labels, num_annotations_per_task, parameters)
-        return real_labels, crowd_labels
-
-    def linked_samples(self, real_parameters, crowds_parameters, n_tasks, num_annotations_per_task):
-        real_labels = self.sample_tasks(n_tasks, parameters=real_parameters)
+    # TODO: Everything down this comment has to be worked on after freezing the main interfaces.
+    # Creates a set of linked discrete consensus problems, with linked meaning that they share the very same set of tasks.
+    # Each problem represents how it will be labeled by a different community
+    def linked_samples(self, real_parameters, crowds_parameters, dgp: DataGenerationParameters):
+        tasks = self.sample_tasks(dgp, parameters=real_parameters)
         crowds_labels= {}
+        crowds_workers = {}
         for crowd_name, parameters in crowds_parameters.items():
+            crowds_workers[crowd_name] = self.sample_workers(dgp, parameters=real_parameters)
             #print("parameters:", parameters)
-            crowds_labels[crowd_name] = self.sample_annotations(real_labels, num_annotations_per_task,
+            crowds_labels[crowd_name] = self.sample_annotations(tasks, crowds_workers[crowd_name], dgp,
                                                                 parameters=parameters)
-        return real_labels, crowds_labels
+        return tasks, crowds_workers, crowds_labels
 
     def compute_consensuses(self, crowds_labels, model, n_tasks, n_labels, n_annotators, crowd_parameters=None, **kwargs):
         crowds_consensus = {}
