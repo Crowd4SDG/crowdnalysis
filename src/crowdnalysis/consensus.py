@@ -5,8 +5,14 @@ from .data import Data
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+
 @dataclass
 class ConsensusProblem:
+    """
+    Example:
+
+        TODO (OM, 20210416): Add examples to init params
+    """
     n_tasks: Optional[int] = field(default=None)
     # features of the tasks
     tasks: Optional[np.ndarray] = None
@@ -18,27 +24,40 @@ class ConsensusProblem:
     annotations: np.ndarray = np.array([])
 
     def __post_init__(self):
+        """
+
+        Raises:
+            ValueError: If # of tasks or of workers is not determinable
+        """
+        if len(self.annotations.shape) == 1:
+            self.annotations = self.annotations[:, np.newaxis]
         self.n_annotations = self.annotations.shape[0]
         if self.n_tasks is None:
             if self.tasks is None:
-                raise Exception("Undetermined number of tasks")
+                raise ValueError("Undetermined number of tasks")
             else:
                 self.n_tasks = self.tasks.shape[0]
         if self.n_workers is None:
             if self.workers is None:
-                raise Exception("Undetermined number of workers")
+                raise ValueError("Undetermined number of workers")
             else:
                 self.n_workers = self.workers.shape[0]
 
-"""
-The DiscreteConsensusProblem enforces that:
-- There is a discrete set of real classes
-- There is a single attribute of each annotation, 
-  which is also discrete and which at least contains the real_classes.
-  It can eventually contain additional answers such as "I do not know", or "in doubt", or "does not apply"
-"""
+
 @dataclass
 class DiscreteConsensusProblem(ConsensusProblem):
+    """
+    Notes:
+        The DiscreteConsensusProblem enforces that:
+        - There is a discrete set of real classes
+        - The labels should be integers starting from 0.
+        - There is a single attribute of each annotation,
+          which is also discrete and which at least contains the real_classes.
+          It can eventually contain additional answers such as "I do not know", or "in doubt", or "does not apply"
+
+    Example:
+        TODO (OM, 20210416): Add examples to init params
+    """
     # number of different labels in the annotation
     n_labels: Optional[int] = None
     # Which labels in an annotation correspond to real hidden classes
@@ -46,19 +65,20 @@ class DiscreteConsensusProblem(ConsensusProblem):
 
     def __post_init__(self):
         ConsensusProblem.__post_init__(self)
-        if self.n_labels is None:
-            self.n_labels = np.unique(self.annotations[:, 0])
+        if (self.n_labels is None) and (self.annotations.shape[0] > 0):
+            self.n_labels = np.max(self.annotations[:, 0]) + 1
         if self.classes is None:
+            # By default every label is a real class
             self.classes = list(range(self.n_labels))
 
-"""
-This dataclass should be subclassed by each of the different models used to compute consensus
-"""
+
 @dataclass
 class Parameters:
+    """
+    Notes:
+        This dataclass should be subclassed by each of the different models used to compute consensus
+    """
     pass
-
-
 
 
 class AbstractConsensus:
@@ -75,11 +95,11 @@ class AbstractConsensus:
 
     @staticmethod
     def get_problem(d: Data, question):
-        return DiscreteConsensusProblem(m = d.get_question_matrix(question),
-                                        n_tasks = d.n_tasks,
-                                        n_labels = d.n_labels(question),
-                                        n_annotators = d.n_annotators,
-                                        classes = d.classes(question))
+        return DiscreteConsensusProblem(m=d.get_question_matrix(question),
+                                        n_tasks=d.n_tasks,
+                                        n_labels=d.n_labels(question),
+                                        n_annotators=d.n_annotators,
+                                        classes=d.classes(question))
 
     def fit_and_compute_consensuses(self, d: Data, questions, **kwargs):
         consensuses = {}
@@ -132,14 +152,17 @@ class AbstractConsensus:
         raise NotImplementedError
 
 
-"""
-This dataclass should be subclassed by each of the different generative consensus models
-"""
 @dataclass
 class DataGenerationParameters:
+    """
+    Notes:
+        This dataclass should be subclassed by each of the different generative consensus models
+    """
     pass
 
+
 class GenerativeAbstractConsensus(AbstractConsensus):
+    """Base class for a consensus algorithm that also samples tasks, workers and annotations."""
 
     def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
         return NotImplementedError
@@ -150,7 +173,7 @@ class GenerativeAbstractConsensus(AbstractConsensus):
     def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
         raise NotImplementedError
 
-    def sample(self, dgp:DataGenerationParameters, parameters: Optional[Parameters] = None):
+    def sample(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None):
         tasks = self.sample_tasks(dgp, parameters)
         workers = self.sample_workers(dgp, parameters)
         crowd_labels = self.sample_annotations(tasks, workers, dgp, parameters)
