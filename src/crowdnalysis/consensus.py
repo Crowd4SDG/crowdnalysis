@@ -13,15 +13,19 @@ class ConsensusProblem:
 
         TODO (OM, 20210416): Add examples to init params
     """
-    n_tasks: Optional[int] = field(default=None)
+    n_tasks: int = 0
     # features of the tasks
-    tasks: Optional[np.ndarray] = None
-    n_workers: Optional[int] = field(default=None)
+    f_T: Optional[np.ndarray] = None
+    n_workers: int = 0
     # features of the workers
-    workers: Optional[np.ndarray] = None
+    f_W: Optional[np.ndarray] = None
     n_annotations: int = field(init=False)
+    # task of an annotation
+    t_A: np.ndarray = np.array([])
+    # worker of an annotation
+    w_A: np.ndarray = np.array([])
     # features of each of the annotations
-    annotations: np.ndarray = np.array([])
+    f_A: np.ndarray = np.array([])
 
     def __post_init__(self):
         """
@@ -29,19 +33,9 @@ class ConsensusProblem:
         Raises:
             ValueError: If # of tasks or of workers is not determinable
         """
-        if len(self.annotations.shape) == 1:
-            self.annotations = self.annotations[:, np.newaxis]
-        self.n_annotations = self.annotations.shape[0]
-        if self.n_tasks is None:
-            if self.tasks is None:
-                raise ValueError("Undetermined number of tasks")
-            else:
-                self.n_tasks = self.tasks.shape[0]
-        if self.n_workers is None:
-            if self.workers is None:
-                raise ValueError("Undetermined number of workers")
-            else:
-                self.n_workers = self.workers.shape[0]
+        if len(self.f_A.shape) == 1:
+            self.f_A = self.f_A[:, np.newaxis]
+        self.n_annotations = self.f_A.shape[0]
 
 
 @dataclass
@@ -65,12 +59,34 @@ class DiscreteConsensusProblem(ConsensusProblem):
 
     def __post_init__(self):
         ConsensusProblem.__post_init__(self)
-        if (self.n_labels is None) and (self.annotations.shape[0] > 0):
-            self.n_labels = np.max(self.annotations[:, 0]) + 1
+        if (self.n_labels is None) and (self.f_A.shape[0] > 0):
+            self.n_labels = np.max(self.f_A[:, 0]) + 1
         if self.classes is None:
             # By default every label is a real class
             self.classes = list(range(self.n_labels))
 
+    @staticmethod
+    def from_data(d:Data, question):
+        return DiscreteConsensusProblem(n_tasks=d.n_tasks,
+                                        n_workers=d.n_annotators,
+                                        t_A=d.get_tasks(question),
+                                        w_A=d.get_workers(question),
+                                        f_A=d.get_annotations(question),
+                                        n_labels=d.n_labels(question))
+
+    def compute_n(self):
+        # TODO: This should be optimized
+        # print(m)
+        #N = m.shape[0]
+
+        # print("N=", N, "n_tasks=", self.n_tasks, "n_labels=", self.n_labels, "n_annotators=", self.n_annotators)
+
+        # Compute the n matrix
+
+        n = np.zeros((self.n_workers, self.n_tasks, self.n_labels))
+        for i in range(self.n_annotations):
+            n[self.w_A[i], self.t_A[i], self.f_A[i, 0]] += 1
+        return n
 
 @dataclass
 class Parameters:
@@ -80,26 +96,11 @@ class Parameters:
     """
     pass
 
+# This wrapper deals with the Data interface
 
-class AbstractConsensus:
-    """ Base class for a consensus algorithm."""
-    name = None
-    
-    @staticmethod
-    def compute_counts(dcp: DiscreteConsensusProblem):
-        n = np.zeros((dcp.n_tasks, dcp.n_labels))
-        for i, k, j in dcp.m:
-            n[i, j] += 1
-        return n
-        # print(n)
-
-    @staticmethod
-    def get_problem(d: Data, question):
-        return DiscreteConsensusProblem(m=d.get_question_matrix(question),
-                                        n_tasks=d.n_tasks,
-                                        n_labels=d.n_labels(question),
-                                        n_annotators=d.n_annotators,
-                                        classes=d.classes(question))
+class ConsensusWrapper:
+    def __init__(self, consensus):
+        self._consensus = consensus
 
     def fit_and_compute_consensuses(self, d: Data, questions, **kwargs):
         consensuses = {}
@@ -112,16 +113,8 @@ class AbstractConsensus:
         """Computes consensus and fits model for question question from Data d.
 
         returns consensus, model parameters"""
-        dcp = self.get_problem(d, question)
-        return self.m_fit_and_compute_consensus(dcp, **kwargs)
-
-    def m_fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs):
-        # TODO (OM, 20201210): A return class for model parameters instead of dictionary
-        raise NotImplementedError
-
-    def get_dimensions(self, parameters):
-        """ Returns the number of labels and number of annotators and number of classes of the model encoded in the parameters"""
-        raise NotImplementedError
+        dcp = DiscreteConsensusProblem.from_data(d, question)
+        return self._consensus.fit_and_compute_consensus(dcp, **kwargs)
 
     def fit_many(self, d: Data, reference_consensuses):
         parameters = {}
@@ -130,10 +123,27 @@ class AbstractConsensus:
         return parameters
 
     def fit(self, d: Data, question, reference_consensus, prior=1.0):
-        dcp = self.get_problem(d, question)
-        return self.m_fit(dcp, reference_consensus, prior)
+        dcp = DiscreteConsensusProblem.from_data(d, question)
+        return self._consensus.fit(dcp, reference_consensus, prior)
 
-    def m_fit(self, dcp: DiscreteConsensusProblem, reference_consensus, **kwargs):
+    def compute_consensus(self, d: Data, question, parameters):
+        dcp = DiscreteConsensusProblem.from_data(d, question)
+        return self._consensus.compute_consensus(dcp, parameters)
+
+
+class AbstractConsensus:
+    """ Base class for a consensus algorithm."""
+    name = None
+
+    def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs):
+        # TODO (OM, 20201210): A return class for model parameters instead of dictionary
+        raise NotImplementedError
+
+    def get_dimensions(self, parameters):
+        """ Returns the number of labels and number of annotators and number of classes of the model encoded in the parameters"""
+        raise NotImplementedError
+
+    def fit(self, dcp: DiscreteConsensusProblem, reference_consensus, **kwargs):
         """ Fits the model parameters provided that the consensus is already known.
         This is useful to determine the errors of a different set of annotators than the
         ones that were used to determine the consensus.
@@ -141,11 +151,8 @@ class AbstractConsensus:
         returns parameters """
         raise NotImplementedError
 
-    def compute_consensus(self, d: Data, question, parameters):
-        dcp = self.get_problem(d, question)
-        return self.m_compute_consensus(dcp, parameters)
 
-    def m_compute_consensus(self, dcp: DiscreteConsensusProblem, parameters):
+    def compute_consensus(self, dcp: DiscreteConsensusProblem, parameters):
         """ Computes the consensus with a fixed pre-determined set of parameters.
 
         returns consensus """
@@ -197,9 +204,9 @@ class GenerativeAbstractConsensus(AbstractConsensus):
         crowds_consensus = {}
         for crowd_name, crowd_labels in crowds_labels.items():
             if crowd_parameters is None:
-                crowds_consensus[crowd_name], _ = model.m_fit_and_compute_consensus(crowd_labels, n_tasks, n_labels, n_annotators, **kwargs)
+                crowds_consensus[crowd_name], _ = model.fit_and_compute_consensus(crowd_labels, n_tasks, n_labels, n_annotators, **kwargs)
             else:
-                crowds_consensus[crowd_name], _ = model.m_fit_and_compute_consensus(
+                crowds_consensus[crowd_name], _ = model.fit_and_compute_consensus(
                     crowd_labels, n_tasks, n_labels, n_annotators, init_params=crowd_parameters[crowd_name],**kwargs)
 
         return crowds_consensus

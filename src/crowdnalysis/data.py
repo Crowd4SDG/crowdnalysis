@@ -11,6 +11,7 @@ class Data:
     """
 
     COL_TASK_INDEX = "task_index"  # column name in Data.df
+    COL_WORKER_INDEX = "annotator_index"
 
     def __init__(self):
         """
@@ -154,8 +155,17 @@ class Data:
     def n_labels(self, question):
         return len(self.df[question].cat.categories)
 
+    def get_tasks(self, question):
+        return self.df[[self.COL_TASK_INDEX]].to_numpy()
+
+    def get_workers(self, question):
+        return self.df[[self.COL_WORKER_INDEX]].to_numpy()
+
+    def get_annotations(self, question):
+        return self.df[[question+"_index"]].to_numpy()
+
     def get_question_matrix(self, question):
-        df = self.df[[self.COL_TASK_INDEX, "annotator_index", question+"_index"]]
+        df = self.df[[self.COL_TASK_INDEX, self.COL_WORKER_INDEX, question+"_index"]]
         #print(df[question].cat.codes)
         #df[question] = df[question].cat.codes
         return df.to_numpy()

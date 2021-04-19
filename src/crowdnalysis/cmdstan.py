@@ -109,7 +109,7 @@ class AbstractStanOptimizeConsensus(consensus.GenerativeAbstractConsensus):
     def fit_and_compute_consensus_model(self):
         return CmdStanModel(stan_file=resource_filename(self.model_name + ".fit_and_consensus.stan"))
 
-    def m_fit_and_compute_consensus(self, m, I, J, K, **kwargs):
+    def fit_and_compute_consensus(self, m, I, J, K, **kwargs):
         """Fits the model parameters and computes the consensus.
         returns consensus, model parameters""" 
 
@@ -123,7 +123,7 @@ class AbstractStanOptimizeConsensus(consensus.GenerativeAbstractConsensus):
     def fit_model(self):
         return CmdStanModel(stan_file=resource_filename(self.model_name + ".fit.stan"))
 
-    def m_fit(self, m, I, J, K, reference_consensus, **kwargs):
+    def fit(self, m, I, J, K, reference_consensus, **kwargs):
         """ Fits the model parameters provided that the consensus is already known.
         This is useful to determine the errors of a different set of annotators than the
         ones that were used to determine the consensus.
@@ -140,7 +140,7 @@ class AbstractStanOptimizeConsensus(consensus.GenerativeAbstractConsensus):
     def compute_consensus_model(self):
         return CmdStanModel(stan_file=resource_filename(self.model_name + ".consensus.stan"))
 
-    def m_compute_consensus(self, m, I, J, K, **kwargs):
+    def compute_consensus(self, m, I, J, K, **kwargs):
         #print(kwargs["data"])
         stan_data, init_data, kwargs_opt = self.map_data_to_model(m, I, J, K)
         stan_data.update(kwargs["data"])

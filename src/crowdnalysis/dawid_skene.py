@@ -1,11 +1,11 @@
 import numpy as np
 
-from . import consensus
+from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem
 from .probabilistic import Probabilistic
 from .common import vprint
 
 
-class DawidSkene(consensus.GenerativeAbstractConsensus):
+class DawidSkene(GenerativeAbstractConsensus):
 
     name = "DawidSkene"
 
@@ -15,8 +15,9 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
         self.tau = None
         self.logpi = None
 
-    def m_fit_and_compute_consensus(self, m, n_tasks, n_labels, n_annotators, max_iterations=10000, tolerance=1e-3, prior=1.0, verbose=False, init_params=None):
-        self.n = self._compute_n(m, n_tasks, n_labels, n_annotators)
+    def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, max_iterations=10000, tolerance=1e-3, prior=1.0, verbose=False, init_params=None):
+
+        self.n = dcp.compute_n()
         # ("n:\n{}", self.n)
         # print("First estimate of T ({}) by probabilistic consensus:\n".format(str(self.T.shape)), self.T)
         # First estimate of T_{i,j} is done by probabilistic consensus
@@ -69,12 +70,12 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
         
         return self.T, self._make_parameter_dict()
 
-    def m_fit(self, m, n_tasks, n_labels, n_annotators, T, prior=1.0):
+    def fit(self, m, n_tasks, n_labels, n_annotators, T, prior=1.0):
         n = self._compute_n(m, n_tasks, n_labels, n_annotators)
         tau, logpi = self._m_step(T, n, prior)
         return self._make_parameter_dict(tau, logpi)
 
-    def m_compute_consensus(self, m, n_tasks, n_labels, n_annotators, parameters):
+    def compute_consensus(self, m, n_tasks, n_labels, n_annotators, parameters):
         n = self._compute_n(m, n_tasks, n_labels, n_annotators)
         tau, _pi = self._get_parameters_from_dict(parameters)
         return self._e_step(n, np.log(_pi), tau)
@@ -160,20 +161,6 @@ class DawidSkene(consensus.GenerativeAbstractConsensus):
         if logpi is None:
             logpi = self.logpi
         return {"tau": tau, "pi": np.exp(logpi)}
-
-    def _compute_n(self, m, n_tasks, n_labels, n_annotators):
-        # TODO: This should be optimized
-        # print(m)
-        #N = m.shape[0]
-
-        # print("N=", N, "n_tasks=", self.n_tasks, "n_labels=", self.n_labels, "n_annotators=", self.n_annotators)
-
-        # Compute the n matrix
-
-        n = np.zeros((n_annotators, n_tasks, n_labels))
-        for i, k, j in m:
-            n[k, i, j] += 1
-        return n
 
     def _m_step(self, T, n, prior):
         return (self._m_step_p(T, prior), self._m_step_logpi(T, n, prior))
