@@ -5,7 +5,6 @@ import numpy as np
 from . import log
 from .data import Data
 from dataclasses import dataclass, field
-from dataclasses_json import dataclass_json
 from typing import List, Optional, Tuple
 import json
 from numpyencoder import NumpyEncoder
