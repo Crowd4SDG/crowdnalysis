@@ -6,7 +6,7 @@ from . import log
 from .data import Data
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import json
 from numpyencoder import NumpyEncoder
 
@@ -197,20 +197,28 @@ class DataGenerationParameters:
 class GenerativeAbstractConsensus(AbstractConsensus):
     """Base class for a consensus algorithm that also samples tasks, workers and annotations."""
 
-    def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
-        return NotImplementedError
+    def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None) \
+            -> Tuple[int, Optional[np.ndarray]]:
+        raise NotImplementedError
 
-    def sample_workers(self, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
-        return NotImplementedError
+    def sample_workers(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None)\
+            -> Tuple[int, Optional[np.ndarray]]:
+        raise NotImplementedError
 
-    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
+    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None)\
+            -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         raise NotImplementedError
 
     def sample(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None):
-        tasks = self.sample_tasks(dgp, parameters)
-        workers = self.sample_workers(dgp, parameters)
-        crowd_labels = self.sample_annotations(tasks, workers, dgp, parameters)
-        return tasks, workers, crowd_labels
+        n_tasks, tasks = self.sample_tasks(dgp, parameters)
+        n_workers, workers = self.sample_workers(dgp, parameters)
+        w_A, t_A, f_A = self.sample_annotations(tasks, workers, dgp, parameters)
+        return DiscreteConsensusProblem(n_tasks=n_tasks,
+                                        f_T=tasks,
+                                        n_workers=n_workers,
+                                        w_A=w_A,
+                                        t_A=t_A,
+                                        f_A=f_A)
 
     # TODO: Everything down this comment has to be worked on after freezing the main interfaces.
     # Creates a set of linked discrete consensus problems, with linked meaning that they share the very same set of tasks.

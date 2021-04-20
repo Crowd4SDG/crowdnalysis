@@ -1,10 +1,12 @@
 import numpy as np
 
 from . import log
-from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem
-from .probabilistic import Probabilistic
-from .common import vprint
 
+from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem, \
+    DataGenerationParameters as DGP, Parameters as AbstractParameters
+from .probabilistic import Probabilistic
+from dataclasses import dataclass
+from typing import Optional, Tuple
 
 class DawidSkene(GenerativeAbstractConsensus):
 
@@ -86,65 +88,62 @@ class DawidSkene(GenerativeAbstractConsensus):
         return len(tau), _pi.shape[0], _pi.shape[2]
 
     # Methods from GenerativeAbstractConsensus
+    @dataclass
+    class DataGenerationParameters(DGP):
+        n_tasks: int = 10
+        num_annotations_per_task: int = 2
 
-    def sample_tasks(self, n_tasks, parameters=None):
-        """
+        def __post_init__(self):
+            self.n_annotations = self.n_tasks * self.num_annotations_per_task
 
-        Args:
-            n_tasks: number of tasks
-            num_annotators: number of annotators
+    @dataclass
+    class Parameters(AbstractParameters):
+        tau: np.ndarray = np.array([0.5, 0.5])
+        pi: np.ndarray = np.array([[0.9, 0.1], [0.2, 0.8]])
 
-        Returns:
-            Tuple[numpy.ndarray]:
-        """
-
-        p, _pi = self._get_parameters_from_dict(parameters)
-        n_real_labels = len(p)  # number of real labels
+    def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None):
+        if parameters is None:
+            parameters = self.Parameters()
+        n_real_labels = len(parameters.tau)  # number of real labels
         # Sample the real labels
-        return np.random.choice(n_real_labels, size=n_tasks, p=p)
+        return dgp.n_tasks, np.random.choice(n_real_labels, size=dgp.n_tasks, p=parameters.tau)
 
-    def sample_annotations(self, real_labels, num_annotations_per_task, parameters=None):
-        """
+    def sample_workers(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None) \
+            -> Tuple[int, Optional[np.ndarray]]:
+        return parameters.pi.shape[0], None
 
-        Args:
-            real_labels (numpy.ndarray): 1D array with dimension (n_tasks)
-            num_annotations_per_task (int):number of annotations per task
-
-        Returns:
-            numpy.ndarray: 2D array with dimensions (n_tasks * num_annotations_per_task, 3)
-
-        """
-        tau, _pi = self._get_parameters_from_dict(parameters)
-        #print("pi", _pi)
-        n_tasks = real_labels.shape[0]  # number of tasks
-        n_labels = _pi.shape[2]
-        n_annotators = _pi.shape[0]  #
+    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
+        if parameters is None:
+            parameters = self.Parameters()
+        n_labels = parameters.pi.shape[2]
+        n_workers = parameters.pi.shape[0]  #
         # Sample the annotators
         # print("Generating crowd labels n_tasks: {}, n_labels: {}, n_annotators: {}".format(n_tasks, n_labels, n_annotators))
-        annotators = np.random.choice(n_annotators, size=(n_tasks, num_annotations_per_task))
-        labels_and_annotators = annotators + real_labels[:, np.newaxis] * n_annotators
+        annotators = np.random.choice(n_workers, size=(dgp.n_tasks, dgp.num_annotations_per_task))
+        labels_and_annotators = annotators + tasks[:, np.newaxis] * n_workers
         labels_and_annotators = labels_and_annotators.flatten()
         unique_la, inverse_la, counts_la = np.unique(labels_and_annotators, return_inverse=True, return_counts=True)
         # print(inverse_la.shape)
         # print(inverse_la)
-        crowd_labels = np.zeros((n_tasks * num_annotations_per_task, 3), dtype=np.int32)
-        crowd_labels[:, 0] = np.arange(n_tasks * num_annotations_per_task) // num_annotations_per_task
+        w_A = np.zeros(dgp.n_annotations, dtype=np.int32)
+        f_A = np.zeros(dgp.n_annotations, dtype=np.int32)
+        t_A = np.arange(dgp.n_annotations, dtype=np.int32) // dgp.num_annotations_per_task
         # crowd_labels.flatten()
         for i_la, label_and_annotator in enumerate(unique_la):
-            real_label = label_and_annotator // n_annotators
-            annotator_index = label_and_annotator % n_annotators
+            real_label = label_and_annotator // n_workers
+            annotator_index = label_and_annotator % n_workers
             # print("Real_label:", real_label)
             # print("Annotator:", annotator_index)
-            emission_p = _pi[annotator_index, real_label]
+            emission_p = parameters.pi[annotator_index, real_label]
             # print("i_la:", i_la)
             # print("counts:", counts_la[i_la])
             emitted_labels = np.random.choice(n_labels, size=counts_la[i_la], p=emission_p)
             ca_indexes = np.equal(inverse_la, i_la)
             # print(ca_indexes.shape)
             # print(ca_indexes)
-            crowd_labels[:, 1][ca_indexes] = annotator_index
-            crowd_labels[:, 2][ca_indexes] = emitted_labels
-        return crowd_labels
+            w_A[ca_indexes] = annotator_index
+            f_A[ca_indexes] = emitted_labels
+        return w_A, t_A, f_A
 
     # Private methods
 
