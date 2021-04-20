@@ -20,8 +20,24 @@
 - `pip install` the requirements into the virtual environment where you will use `crowdnalysis`
 - `import crowdnalysis`
 
+
 *see* `albania-analysis` [repo](https://github.com/Crowd4SDG/albania-analysis) for a sample usage 
 and its initialization script (`bin/init-local.sh`) for the above-mentioned configuration. 
+
+## How to run unit tests
+
+We use pytest as testing framework. Tests can be run by doing:
+
+`pytest src/`
+
+If we want to get the logs of the execution do 
+
+`pytest src/ --log-cli-level 0`
+
+
+## Logging 
+
+We use the standard `logging` library according to the rules [here](https://docs.python.org/3/howto/logging.html)
 
 ## Known issues
 ### On Mac

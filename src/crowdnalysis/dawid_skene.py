@@ -1,5 +1,6 @@
 import numpy as np
 
+from . import log
 from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem
 from .probabilistic import Probabilistic
 from .common import vprint

@@ -9,3 +9,5 @@ pystan
 statsmodels
 dominate
 cmdstanpy
+pytest
+numpyencoder

@@ -1,13 +1,27 @@
+import dataclasses
+
 import numpy as np
 
-from .common import vprint
+from . import log
 from .data import Data
 from dataclasses import dataclass, field
+from dataclasses_json import dataclass_json
 from typing import List, Optional
-
+import json
+from numpyencoder import NumpyEncoder
 
 @dataclass
-class ConsensusProblem:
+class JSONDataClass:
+    def to_json(self):
+        return json.dumps(dataclasses.asdict(self), cls=NumpyEncoder)
+
+    @classmethod
+    def from_json(cls, s: str):
+        d = json.loads(s)
+        return cls(**d)
+
+@dataclass
+class ConsensusProblem(JSONDataClass):
     """
     Example:
 
@@ -19,7 +33,7 @@ class ConsensusProblem:
     n_workers: int = 0
     # features of the workers
     f_W: Optional[np.ndarray] = None
-    n_annotations: int = field(init=False)
+    n_annotations: Optional[int] = None
     # task of an annotation
     t_A: np.ndarray = np.array([])
     # worker of an annotation
@@ -33,9 +47,20 @@ class ConsensusProblem:
         Raises:
             ValueError: If # of tasks or of workers is not determinable
         """
+        if isinstance(self.f_T, list):
+            self.f_T = np.array(self.f_T)
+        if isinstance(self.f_W, list):
+            self.f_W = np.array(self.f_W)
+        if isinstance(self.t_A, list):
+            self.t_A = np.array(self.t_A)
+        if isinstance(self.w_A, list):
+            self.w_A = np.array(self.w_A)
+        if isinstance(self.f_A, list):
+            self.f_A = np.array(self.f_A)
         if len(self.f_A.shape) == 1:
             self.f_A = self.f_A[:, np.newaxis]
         self.n_annotations = self.f_A.shape[0]
+
 
 
 @dataclass
@@ -66,7 +91,7 @@ class DiscreteConsensusProblem(ConsensusProblem):
             self.classes = list(range(self.n_labels))
 
     @staticmethod
-    def from_data(d:Data, question):
+    def from_data(d: Data, question):
         return DiscreteConsensusProblem(n_tasks=d.n_tasks,
                                         n_workers=d.n_annotators,
                                         t_A=d.get_tasks(question),
@@ -87,6 +112,7 @@ class DiscreteConsensusProblem(ConsensusProblem):
         for i in range(self.n_annotations):
             n[self.w_A[i], self.t_A[i], self.f_A[i, 0]] += 1
         return n
+
 
 @dataclass
 class Parameters:
@@ -207,27 +233,26 @@ class GenerativeAbstractConsensus(AbstractConsensus):
                 crowds_consensus[crowd_name], _ = model.fit_and_compute_consensus(crowd_labels, n_tasks, n_labels, n_annotators, **kwargs)
             else:
                 crowds_consensus[crowd_name], _ = model.fit_and_compute_consensus(
-                    crowd_labels, n_tasks, n_labels, n_annotators, init_params=crowd_parameters[crowd_name],**kwargs)
+                    crowd_labels, n_tasks, n_labels, n_annotators, init_params=crowd_parameters[crowd_name], **kwargs)
 
         return crowds_consensus
 
     def evaluate_consensuses_on_linked_samples(self, real_parameters, crowds_parameters, models, measures, sample_sizes,
-                                               annotations_per_task, repeats, verbose=False, init_params=False):
+                                               annotations_per_task, repeats, init_params=False):
         n_labels, n_annotators, n_classes = self.get_dimensions(real_parameters)
         for n_tasks in sample_sizes:
-            vprint("Sample size:", n_tasks, verbose=verbose)
+            log.info("Sample size:", n_tasks)
             for num_annotations_per_task in annotations_per_task:
-                vprint(".# of annotations per task:", num_annotations_per_task, verbose=verbose)
+                log.info(".# of annotations per task:", num_annotations_per_task)
                 for repetition in range(repeats):
-                    vprint("..Repetition:", repetition, verbose=verbose)
+                    log.info("..Repetition:", repetition)
                     real_labels, crowds_labels = self.linked_samples(real_parameters, crowds_parameters, n_tasks, num_annotations_per_task)
                     for model_name, model in models.items():
-                        vprint("...Model:", model_name, verbose=verbose)
+                        log.info("...Model:", model_name)
                         crowds_consensus = self.compute_consensuses(crowds_labels, model, n_tasks, n_labels, n_annotators,
-                                                                    crowds_parameters if init_params else None,
-                                                                    verbose=verbose)
+                                                                    crowds_parameters if init_params else None)
                         for measure_name, measure in measures.items():
-                            # vprint("....Measure:", measure_name, verbose=verbose)
+                            log.info("....Measure:", measure_name)
                             crowds_evals = measure.evaluate_crowds(real_labels, crowds_consensus)
                             for crowd_name, eval_value in crowds_evals.items():
                                 yield {"num_samples": n_tasks,
