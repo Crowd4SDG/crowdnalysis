@@ -12,6 +12,11 @@ class DawidSkene(GenerativeAbstractConsensus):
 
     name = "DawidSkene"
 
+    @dataclass
+    class Parameters(AbstractParameters):
+        tau: np.ndarray = np.array([0.5, 0.5])
+        pi: np.ndarray = np.array([[0.9, 0.1], [0.2, 0.8]])
+
     def __init__(self):
         self.n = None
         self.T = None
@@ -19,31 +24,19 @@ class DawidSkene(GenerativeAbstractConsensus):
         self.logpi = None
 
     def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, max_iterations=10000, tolerance=1e-3, prior=1.0, verbose=False, init_params=None):
-
         self.n = dcp.compute_n()
-        # ("n:\n{}", self.n)
-        # print("First estimate of T ({}) by probabilistic consensus:\n".format(str(self.T.shape)), self.T)
         # First estimate of T_{i,j} is done by probabilistic consensus
         if init_params is not None:
-            self.tau, _pi = self._get_parameters_from_dict(init_params)
-            self.logpi = np.log(_pi)
-            self.T, _ = Probabilistic.probabilistic_consensus(m, n_tasks, n_labels, softening=prior)
+            self.tau = init_params.tau
+            self.logpi = np.log(init_params.pi)
+            self.T, _ = Probabilistic.fit_and_compute_consensus(dcp, softening=prior)
         else:
-            self.T, _ = Probabilistic.probabilistic_consensus(m, n_tasks, n_labels, softening=prior)
-
+            self.T, _ = Probabilistic.fit_and_compute_consensus(dcp, softening=prior)
             # Initialize the percentages of each label
             self.tau = self._m_step_p(self.T, prior)
-            # print("Initial percentages ({}) of each label:\n".format(str(self.tau.shape)), self.tau)
-
-            #print("p=", self.tau)
 
             # Initialize the errors
-            # _pi[k,j,l] (KxJxJ)
             self.logpi = self._m_step_logpi(self.T, self.n, prior)
-            #self.logpi = np.log(self.taui)
-            # print("Initial errors ({}):\n".format(str(np.exp(self.logpi).shape)), np.exp(self.logpi))
-
-            #print("pi=", np.exp(self.logpi))
 
         has_converged = False
         num_iterations = 0
@@ -52,40 +45,31 @@ class DawidSkene(GenerativeAbstractConsensus):
             # Expectation step
             old_T = self.T
             self.T = self._e_step(self.n, self.logpi, self.tau)
-            # print("T=", self.T)
             # Maximization
             self.tau, self.logpi = self._m_step(self.T, self.n, prior)
-            #print("tau=", self.tau)
-            #print("pi=", np.exp(self.logpi))
             has_converged = np.allclose(old_T, self.T, atol=tolerance)
             num_iterations += 1
             any_nan = (np.isnan(self.T).any() or np.isnan(self.tau).any() or np.isnan(self.logpi).any())
         if any_nan:
-            vprint("NaN values detected", verbose=verbose)
+            log.info("NaN values detected")
         elif has_converged:
-            vprint("DS has converged in", num_iterations, "iterations", verbose=verbose)
-            #print("tau=", self.tau)
-            #print("pi=", np.exp(self.logpi))
-            #print("T=", self.T)
+            log.info("DS has converged in %i iterations", num_iterations)
         else:
-            vprint("The maximum of", max_iterations, "iterations has been reached", verbose=verbose     )
-        # print("\np {}:\n{}, \npi {}:\n{},\nT {}:\n{}".format(self.tau.shape, self.tau, self.logpi.shape, np.exp(self.logpi), self.T.shape, self.T))
-        
-        return self.T, self._make_parameter_dict()
+            log.info("The maximum of %i iterations has been reached", max_iterations)
 
-    def fit(self, m, n_tasks, n_labels, n_annotators, T, prior=1.0):
-        n = self._compute_n(m, n_tasks, n_labels, n_annotators)
+        return self.T, self.Parameters(tau=self.tau,pi=np.exp(self.logpi))
+
+    def fit(self,  dcp:DiscreteConsensusProblem, T, prior=1.0):
+        n = dcp.compute_n()
         tau, logpi = self._m_step(T, n, prior)
-        return self._make_parameter_dict(tau, logpi)
+        return self.Parameters(tau=tau,pi=np.exp(logpi))
 
-    def compute_consensus(self, m, n_tasks, n_labels, n_annotators, parameters):
-        n = self._compute_n(m, n_tasks, n_labels, n_annotators)
-        tau, _pi = self._get_parameters_from_dict(parameters)
-        return self._e_step(n, np.log(_pi), tau)
+    def compute_consensus(self, dcp:DiscreteConsensusProblem, parameters: Parameters):
+        n = dcp.compute_n()
+        return self._e_step(n, np.log(parameters.pi), parameters.tau)
 
-    def get_dimensions(self, parameters):
-        tau, _pi = self._get_parameters_from_dict(parameters)
-        return len(tau), _pi.shape[0], _pi.shape[2]
+    #def get_dimensions(self, parameters:Parameters):
+    #    return parameters.tau.shape[0], parameters.pi.shape[0], parameters.pi.shape[2]
 
     # Methods from GenerativeAbstractConsensus
     @dataclass
@@ -95,11 +79,6 @@ class DawidSkene(GenerativeAbstractConsensus):
 
         def __post_init__(self):
             self.n_annotations = self.n_tasks * self.num_annotations_per_task
-
-    @dataclass
-    class Parameters(AbstractParameters):
-        tau: np.ndarray = np.array([0.5, 0.5])
-        pi: np.ndarray = np.array([[0.9, 0.1], [0.2, 0.8]])
 
     def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None):
         if parameters is None:
@@ -118,49 +97,24 @@ class DawidSkene(GenerativeAbstractConsensus):
         n_labels = parameters.pi.shape[2]
         n_workers = parameters.pi.shape[0]  #
         # Sample the annotators
-        # print("Generating crowd labels n_tasks: {}, n_labels: {}, n_annotators: {}".format(n_tasks, n_labels, n_annotators))
         annotators = np.random.choice(n_workers, size=(dgp.n_tasks, dgp.num_annotations_per_task))
         labels_and_annotators = annotators + tasks[:, np.newaxis] * n_workers
         labels_and_annotators = labels_and_annotators.flatten()
         unique_la, inverse_la, counts_la = np.unique(labels_and_annotators, return_inverse=True, return_counts=True)
-        # print(inverse_la.shape)
-        # print(inverse_la)
         w_A = np.zeros(dgp.n_annotations, dtype=np.int32)
         f_A = np.zeros(dgp.n_annotations, dtype=np.int32)
         t_A = np.arange(dgp.n_annotations, dtype=np.int32) // dgp.num_annotations_per_task
-        # crowd_labels.flatten()
         for i_la, label_and_annotator in enumerate(unique_la):
             real_label = label_and_annotator // n_workers
             annotator_index = label_and_annotator % n_workers
-            # print("Real_label:", real_label)
-            # print("Annotator:", annotator_index)
             emission_p = parameters.pi[annotator_index, real_label]
-            # print("i_la:", i_la)
-            # print("counts:", counts_la[i_la])
             emitted_labels = np.random.choice(n_labels, size=counts_la[i_la], p=emission_p)
             ca_indexes = np.equal(inverse_la, i_la)
-            # print(ca_indexes.shape)
-            # print(ca_indexes)
             w_A[ca_indexes] = annotator_index
             f_A[ca_indexes] = emitted_labels
         return w_A, t_A, f_A
 
     # Private methods
-
-    def _get_parameters_from_dict(self, parameters):
-        if parameters is None:
-            tau = self.tau
-            _pi = np.exp(self.logpi)
-        else:
-            tau, _pi = parameters["tau"], parameters["pi"]
-        return tau, _pi
-
-    def _make_parameter_dict(self, tau=None, logpi=None):
-        if tau is None:
-            tau = self.tau
-        if logpi is None:
-            logpi = self.logpi
-        return {"tau": tau, "pi": np.exp(logpi)}
 
     def _m_step(self, T, n, prior):
         return (self._m_step_p(T, prior), self._m_step_logpi(T, n, prior))
@@ -172,6 +126,8 @@ class DawidSkene(GenerativeAbstractConsensus):
         return p
 
     def _m_step_logpi(self, T, n, prior):
+        log.debug(T.shape)
+        log.debug(n.shape)
         _pi = np.swapaxes(np.dot(T.transpose(), n), 0, 1)
         _pi += prior
         sums = np.sum(_pi, axis=2)
@@ -179,12 +135,10 @@ class DawidSkene(GenerativeAbstractConsensus):
         return np.log(_pi)
 
     def _e_step(self, n, logpi, tau):
-        # print("_e_step > n:\n{}\n logpi:\n{}\n p:\n{}".format(n, logpi, p))
         logT = np.tensordot(n, logpi, axes=([0, 2], [0, 2]))
         logT += np.log(tau[np.newaxis, :])
         maxLogT = np.max(logT)
         logSumT = np.log(np.sum(np.exp(logT-maxLogT), axis=1)) + maxLogT
         logT -= logSumT[:,np.newaxis]
         T = np.exp(logT)
-        # print("T=",T)
         return T

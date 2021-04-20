@@ -161,8 +161,8 @@ class AbstractConsensus:
     """ Base class for a consensus algorithm."""
     name = None
 
-    def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs):
-        # TODO (OM, 20201210): A return class for model parameters instead of dictionary
+    def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs)\
+            -> Tuple[np.ndarray, Parameters]:
         raise NotImplementedError
 
     def get_dimensions(self, parameters):

@@ -1,22 +1,35 @@
 from .. import log
 from ..dawid_skene import DawidSkene
+from . import close, distance
 import numpy as np
 
 def sample():
     dgp = DawidSkene.DataGenerationParameters(n_tasks=1000, num_annotations_per_task=10)
     parameters = DawidSkene.Parameters(tau=np.array([0.3, 0.7]), pi=np.array([[[0.9, 0.1], [0.2, 0.8]]]))
     ds = DawidSkene()
-    p = ds.sample(dgp, parameters)
-    return p
+    problem = ds.sample(dgp, parameters)
+    return problem, parameters
 
 def test_sampling():
-    p = sample()
-    log.info(p)
-    log.info(p.to_json())
+    problem, parameters = sample()
+    log.info(problem)
+    log.info(parameters)
 
-# TODO: Complete
-#def test_inference():
-#    p = sample()
-#    ds = DawidSkene()
-#    consensus = ds.fit_and_compute_consensus(p)
-#    log.info(consensus)
+def test_fit_and_compute_consensus():
+    problem, parameters = sample()
+    ds = DawidSkene()
+    consensus, parameters_learned = ds.fit_and_compute_consensus(problem)
+    tau_distance = distance(parameters_learned.tau, parameters.tau)
+    log.debug("Distance between learned tau and real tau: %f", tau_distance)
+    pi_distance = distance(parameters_learned.pi, parameters.pi)
+    log.debug("Distance between learned pi and real pi: %f", pi_distance)
+    assert close(parameters_learned.tau, parameters.tau)
+    assert close(parameters_learned.pi, parameters.pi)
+
+# TODO: Fill in the test methods below
+
+def test_fit():
+    pass
+
+def test_compute_consensus():
+    pass
