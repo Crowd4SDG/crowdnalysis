@@ -2,20 +2,20 @@ import numpy as np
 
 from . import log
 
-from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem, \
-    DataGenerationParameters as DGP, Parameters as AbstractParameters
+from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem
 from .probabilistic import Probabilistic
 from dataclasses import dataclass
 from typing import Optional, Tuple
+
 
 class DawidSkene(GenerativeAbstractConsensus):
 
     name = "DawidSkene"
 
     @dataclass
-    class Parameters(AbstractParameters):
+    class Parameters(GenerativeAbstractConsensus.Parameters):
         tau: np.ndarray = np.array([0.5, 0.5])
-        pi: np.ndarray = np.array([[0.9, 0.1], [0.2, 0.8]])
+        pi: np.ndarray = np.array([[[0.9, 0.1], [0.2, 0.8]]])
 
     def __init__(self):
         self.n = None
@@ -68,17 +68,18 @@ class DawidSkene(GenerativeAbstractConsensus):
         n = dcp.compute_n()
         return self._e_step(n, np.log(parameters.pi), parameters.tau)
 
-    #def get_dimensions(self, parameters:Parameters):
-    #    return parameters.tau.shape[0], parameters.pi.shape[0], parameters.pi.shape[2]
 
     # Methods from GenerativeAbstractConsensus
     @dataclass
-    class DataGenerationParameters(DGP):
+    class DataGenerationParameters(GenerativeAbstractConsensus.DataGenerationParameters):
         n_tasks: int = 10
         num_annotations_per_task: int = 2
 
         def __post_init__(self):
             self.n_annotations = self.n_tasks * self.num_annotations_per_task
+
+    def get_dimensions(self, parameters: Parameters):
+        return parameters.tau.shape[0], parameters.pi.shape[0], parameters.pi.shape[2]
 
     def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None):
         if parameters is None:

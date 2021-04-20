@@ -1,16 +1,17 @@
 import numpy as np
 
-from .consensus import AbstractConsensus, DiscreteConsensusProblem
+from .consensus import AbstractSimpleConsensus, DiscreteConsensusProblem
 from . import consensus
 from .data import Data
 from dataclasses import dataclass
 
 
-class MajorityVoting(AbstractConsensus):
+class MajorityVoting(AbstractSimpleConsensus):
+
     name = "MajorityVoting"
 
     @dataclass
-    class Parameters(consensus.Parameters):
+    class Parameters(AbstractSimpleConsensus.Parameters):
         pass
 
     def __init__(self):

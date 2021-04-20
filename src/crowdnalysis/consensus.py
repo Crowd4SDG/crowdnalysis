@@ -84,7 +84,7 @@ class DiscreteConsensusProblem(ConsensusProblem):
     def __post_init__(self):
         ConsensusProblem.__post_init__(self)
         if (self.n_labels is None) and (self.f_A.shape[0] > 0):
-            self.n_labels = np.max(self.f_A[:, 0]) + 1
+            self.n_labels = int(np.max(self.f_A[:, 0]) + 1)
         if self.classes is None:
             # By default every label is a real class
             self.classes = list(range(self.n_labels))
@@ -111,15 +111,6 @@ class DiscreteConsensusProblem(ConsensusProblem):
         for i in range(self.n_annotations):
             n[self.w_A[i], self.t_A[i], self.f_A[i, 0]] += 1
         return n
-
-
-@dataclass
-class Parameters:
-    """
-    Notes:
-        This dataclass should be subclassed by each of the different models used to compute consensus
-    """
-    pass
 
 # This wrapper deals with the Data interface
 
@@ -156,19 +147,32 @@ class ConsensusWrapper:
         return self._consensus.compute_consensus(dcp, parameters)
 
 
-class AbstractConsensus:
+DiscreteConsensus = np.ndarray
+
+
+class AbstractSimpleConsensus:
+    """ Base class for very simple consensus algorithms."""
+    name = None
+
+    @dataclass
+    class Parameters(JSONDataClass):
+        """
+        Notes:
+            This dataclass should be subclassed by each of the different models used to compute consensus
+        """
+        pass
+
+    def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs) \
+            -> Tuple[DiscreteConsensus, Parameters]:
+        raise NotImplementedError
+
+
+class AbstractConsensus(AbstractSimpleConsensus):
     """ Base class for a consensus algorithm."""
     name = None
 
-    def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs)\
-            -> Tuple[np.ndarray, Parameters]:
-        raise NotImplementedError
-
-    def get_dimensions(self, parameters):
-        """ Returns the number of labels and number of annotators and number of classes of the model encoded in the parameters"""
-        raise NotImplementedError
-
-    def fit(self, dcp: DiscreteConsensusProblem, reference_consensus, **kwargs):
+    def fit(self, dcp: DiscreteConsensusProblem, reference_consensus: DiscreteConsensus, **kwargs) \
+            -> AbstractSimpleConsensus.Parameters:
         """ Fits the model parameters provided that the consensus is already known.
         This is useful to determine the errors of a different set of annotators than the
         ones that were used to determine the consensus.
@@ -176,42 +180,48 @@ class AbstractConsensus:
         returns parameters """
         raise NotImplementedError
 
-
-    def compute_consensus(self, dcp: DiscreteConsensusProblem, parameters):
+    def compute_consensus(self, dcp: DiscreteConsensusProblem, parameters: AbstractSimpleConsensus.Parameters) \
+            -> DiscreteConsensus:
         """ Computes the consensus with a fixed pre-determined set of parameters.
 
         returns consensus """
         raise NotImplementedError
 
 
-@dataclass
-class DataGenerationParameters:
-    """
-    Notes:
-        This dataclass should be subclassed by each of the different generative consensus models
-    """
-    pass
 
 
 class GenerativeAbstractConsensus(AbstractConsensus):
     """Base class for a consensus algorithm that also samples tasks, workers and annotations."""
 
-    def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None) \
+    @dataclass
+    class DataGenerationParameters(JSONDataClass):
+        """
+        Notes:
+            This dataclass should be subclassed by each of the different generative consensus models
+        """
+        pass
+
+    def get_dimensions(self, parameters: AbstractSimpleConsensus.Parameters):
+        """ Returns the number of labels and number of annotators and number of classes of the model encoded in the parameters"""
+        raise NotImplementedError
+
+    def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None) \
             -> Tuple[int, Optional[np.ndarray]]:
         raise NotImplementedError
 
-    def sample_workers(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None)\
+    def sample_workers(self, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None)\
             -> Tuple[int, Optional[np.ndarray]]:
         raise NotImplementedError
 
-    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None)\
+    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters]=None)\
             -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         raise NotImplementedError
 
-    def sample(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None):
+    def sample(self, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None):
         n_tasks, tasks = self.sample_tasks(dgp, parameters)
         n_workers, workers = self.sample_workers(dgp, parameters)
         w_A, t_A, f_A = self.sample_annotations(tasks, workers, dgp, parameters)
+        log.debug(type(w_A.dtype))
         return DiscreteConsensusProblem(n_tasks=n_tasks,
                                         f_T=tasks,
                                         n_workers=n_workers,
