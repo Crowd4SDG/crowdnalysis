@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 from statsmodels.stats import inter_rater
 
-from .consensus import AbstractConsensus
+from .consensus import AbstractConsensus, DiscreteConsensusProblem
 from .data import Data
 
 
@@ -12,9 +12,9 @@ def get_n_and_ranges(d: Data, question: str) -> Tuple[np.ndarray, int, int, int]
 
     where n_tasks: # of tasks, n_labels: # of labels, n_annotators: # of annotators
     """
-    dcp = AbstractConsensus.get_problem(d, question)
-    n = AbstractConsensus.compute_counts(dcp.m, dcp.n_tasks, dcp.n_labels)
-    return n, dcp.n_tasks, dcp.n_labels, dcp.n_annotators
+    dcp = DiscreteConsensusProblem.from_data(d, question)
+    n = dcp.compute_n().sum(axis=0)
+    return n, dcp.n_tasks
 
 
 def fleiss_kappa(d: Data, question: str) -> float:
@@ -59,7 +59,7 @@ def _fleiss_gen_kappa(r, w=None):
 
 def full_agreement_percentage(d: Data, question: str) -> float:
     """Return the percentage of annotations for the `question` where all annotators agreed on the same answer"""
-    n, n_tasks, *_ = get_n_and_ranges(d, question)
+    n, n_tasks = get_n_and_ranges(d, question)
     best_count = np.amax(n, axis=1)
     pct = np.sum(np.sum(n, axis=1) == best_count) / n_tasks
     return pct

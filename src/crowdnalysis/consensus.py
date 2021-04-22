@@ -5,9 +5,10 @@ import numpy as np
 from . import log
 from .data import Data
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 import json
 from numpyencoder import NumpyEncoder
+from itertools import product
 
 @dataclass
 class JSONDataClass:
@@ -18,6 +19,12 @@ class JSONDataClass:
     def from_json(cls, s: str):
         d = json.loads(s)
         return cls(**d)
+
+    @classmethod
+    def product_from_dict(cls, options: Dict[str, List]):
+        keys, values = zip(*options.items())
+        ds = [dict(zip(keys, bundle)) for bundle in product(*values)]
+        return [cls(**d) for d in ds]
 
 @dataclass
 class ConsensusProblem(JSONDataClass):
@@ -100,52 +107,12 @@ class DiscreteConsensusProblem(ConsensusProblem):
 
     def compute_n(self):
         # TODO: This should be optimized
-        # print(m)
-        #N = m.shape[0]
-
-        # print("N=", N, "n_tasks=", self.n_tasks, "n_labels=", self.n_labels, "n_annotators=", self.n_annotators)
-
         # Compute the n matrix
 
         n = np.zeros((self.n_workers, self.n_tasks, self.n_labels))
         for i in range(self.n_annotations):
             n[self.w_A[i], self.t_A[i], self.f_A[i, 0]] += 1
         return n
-
-# This wrapper deals with the Data interface
-
-class ConsensusWrapper:
-    def __init__(self, consensus):
-        self._consensus = consensus
-
-    def fit_and_compute_consensuses(self, d: Data, questions, **kwargs):
-        consensuses = {}
-        parameters = {}
-        for q in questions:
-            consensuses[q], parameters[q] = self.fit_and_compute_consensus(d, q, **kwargs)
-        return consensuses, parameters
-
-    def fit_and_compute_consensus(self, d: Data, question, **kwargs):
-        """Computes consensus and fits model for question question from Data d.
-
-        returns consensus, model parameters"""
-        dcp = DiscreteConsensusProblem.from_data(d, question)
-        return self._consensus.fit_and_compute_consensus(dcp, **kwargs)
-
-    def fit_many(self, d: Data, reference_consensuses):
-        parameters = {}
-        for q, consensus in reference_consensuses.items():
-            parameters[q] = self.fit(d, q, consensus)
-        return parameters
-
-    def fit(self, d: Data, question, reference_consensus, prior=1.0):
-        dcp = DiscreteConsensusProblem.from_data(d, question)
-        return self._consensus.fit(dcp, reference_consensus, prior)
-
-    def compute_consensus(self, d: Data, question, parameters):
-        dcp = DiscreteConsensusProblem.from_data(d, question)
-        return self._consensus.compute_consensus(dcp, parameters)
-
 
 DiscreteConsensus = np.ndarray
 
@@ -166,10 +133,39 @@ class AbstractSimpleConsensus:
             -> Tuple[DiscreteConsensus, Parameters]:
         raise NotImplementedError
 
+    def fit_and_compute_consensuses_from_data(self, d: Data, questions, **kwargs):
+        consensuses = {}
+        parameters = {}
+        for q in questions:
+            consensuses[q], parameters[q] = self.fit_and_compute_consensus_from_data(d, q, **kwargs)
+        return consensuses, parameters
+
+    def fit_and_compute_consensus_from_data(self, d: Data, question, **kwargs):
+        """Computes consensus and fits model for question question from Data d.
+
+        returns consensus, model parameters"""
+        dcp = DiscreteConsensusProblem.from_data(d, question)
+        return self.fit_and_compute_consensus(dcp, **kwargs)
+
+
 
 class AbstractConsensus(AbstractSimpleConsensus):
     """ Base class for a consensus algorithm."""
     name = None
+
+    def fit_many_from_data(self, d: Data, reference_consensuses):
+        parameters = {}
+        for q, consensus in reference_consensuses.items():
+            parameters[q] = self.fit_from_data(d, q, consensus)
+        return parameters
+
+    def fit_from_data(self, d: Data, question, reference_consensus, prior=1.0):
+        dcp = DiscreteConsensusProblem.from_data(d, question)
+        return self.fit(dcp, reference_consensus, prior)
+
+    def compute_consensus_from_data(self, d: Data, question, parameters):
+        dcp = DiscreteConsensusProblem.from_data(d, question)
+        return self.compute_consensus(dcp, parameters)
 
     def fit(self, dcp: DiscreteConsensusProblem, reference_consensus: DiscreteConsensus, **kwargs) \
             -> AbstractSimpleConsensus.Parameters:
@@ -179,7 +175,6 @@ class AbstractConsensus(AbstractSimpleConsensus):
 
         returns parameters """
         raise NotImplementedError
-
     def compute_consensus(self, dcp: DiscreteConsensusProblem, parameters: AbstractSimpleConsensus.Parameters) \
             -> DiscreteConsensus:
         """ Computes the consensus with a fixed pre-determined set of parameters.
@@ -219,6 +214,9 @@ class GenerativeAbstractConsensus(AbstractConsensus):
 
     def sample(self, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None):
         n_tasks, tasks = self.sample_tasks(dgp, parameters)
+        return self._sample_others(n_tasks, tasks, dgp, parameters)
+
+    def _sample_others(self, n_tasks, tasks, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None):
         n_workers, workers = self.sample_workers(dgp, parameters)
         w_A, t_A, f_A = self.sample_annotations(tasks, workers, dgp, parameters)
         log.debug(type(w_A.dtype))
@@ -233,50 +231,48 @@ class GenerativeAbstractConsensus(AbstractConsensus):
     # Creates a set of linked discrete consensus problems, with linked meaning that they share the very same set of tasks.
     # Each problem represents how it will be labeled by a different community
     def linked_samples(self, real_parameters, crowds_parameters, dgp: DataGenerationParameters):
-        tasks = self.sample_tasks(dgp, parameters=real_parameters)
-        crowds_labels= {}
-        crowds_workers = {}
+        n_tasks, tasks = self.sample_tasks(dgp, parameters=real_parameters)
+        crowds_dcps = {}
         for crowd_name, parameters in crowds_parameters.items():
-            crowds_workers[crowd_name] = self.sample_workers(dgp, parameters=real_parameters)
-            #print("parameters:", parameters)
-            crowds_labels[crowd_name] = self.sample_annotations(tasks, crowds_workers[crowd_name], dgp,
-                                                                parameters=parameters)
-        return tasks, crowds_workers, crowds_labels
+            crowds_dcps[crowd_name] = self._sample_others(n_tasks, tasks, dgp, parameters)
 
-    def compute_consensuses(self, crowds_labels, model, n_tasks, n_labels, n_annotators, crowd_parameters=None, **kwargs):
+        return tasks, crowds_dcps
+
+    def compute_consensuses(self, crowds_dcps, model, crowd_parameters=None, **kwargs):
         crowds_consensus = {}
-        for crowd_name, crowd_labels in crowds_labels.items():
+        for crowd_name, dcp in crowds_dcps.items():
+            #print(dcp)
+            #print(model)
             if crowd_parameters is None:
-                crowds_consensus[crowd_name], _ = model.fit_and_compute_consensus(crowd_labels, n_tasks, n_labels, n_annotators, **kwargs)
+                crowds_consensus[crowd_name], _ = model.fit_and_compute_consensus(dcp, **kwargs)
             else:
-                crowds_consensus[crowd_name], _ = model.fit_and_compute_consensus(
-                    crowd_labels, n_tasks, n_labels, n_annotators, init_params=crowd_parameters[crowd_name], **kwargs)
+                crowds_consensus[crowd_name], _ = model.fit_and_compute_consensus(dcp, init_params=crowd_parameters[crowd_name], **kwargs)
 
         return crowds_consensus
 
-    def evaluate_consensuses_on_linked_samples(self, real_parameters, crowds_parameters, models, measures, sample_sizes,
-                                               annotations_per_task, repeats, init_params=False):
-        n_labels, n_annotators, n_classes = self.get_dimensions(real_parameters)
-        for n_tasks in sample_sizes:
-            log.info("Sample size:", n_tasks)
-            for num_annotations_per_task in annotations_per_task:
-                log.info(".# of annotations per task:", num_annotations_per_task)
-                for repetition in range(repeats):
-                    log.info("..Repetition:", repetition)
-                    real_labels, crowds_labels = self.linked_samples(real_parameters, crowds_parameters, n_tasks, num_annotations_per_task)
-                    for model_name, model in models.items():
-                        log.info("...Model:", model_name)
-                        crowds_consensus = self.compute_consensuses(crowds_labels, model, n_tasks, n_labels, n_annotators,
-                                                                    crowds_parameters if init_params else None)
-                        for measure_name, measure in measures.items():
-                            log.info("....Measure:", measure_name)
-                            crowds_evals = measure.evaluate_crowds(real_labels, crowds_consensus)
-                            for crowd_name, eval_value in crowds_evals.items():
-                                yield {"num_samples": n_tasks,
-                                       "num_annotations_per_task": num_annotations_per_task,
-                                       "consensus_algorithm": model_name,
-                                       "repetition": repetition,
-                                       "crowd_name": crowd_name,
-                                       "measure": measure_name,
-                                       "value": eval_value}
+    def evaluate_consensuses_on_linked_samples(self, real_parameters, crowds_parameters, models, measures,
+                                               dgps: List[DataGenerationParameters],
+                                               repeats, init_params=False):
+        for dgp in dgps:
+            for repetition in range(repeats):
+                log.info("..Repetition:", repetition)
+                real_labels, crowds_dcps = self.linked_samples(real_parameters, crowds_parameters, dgp)
+                for model_name, model in models.items():
+                    log.info("...Model:", model_name)
+                    crowds_consensus = self.compute_consensuses(crowds_dcps, model,
+                                                                crowds_parameters if init_params else None)
+                    for measure_name, measure in measures.items():
+                        log.info("....Measure:", measure_name)
+                        crowds_evals = measure.evaluate_crowds(real_labels, crowds_consensus)
+                        for crowd_name, eval_value in crowds_evals.items():
+                            d = dataclasses.asdict(dgp)
+                            d.update({
+                                "consensus_algorithm": model_name,
+                                "repetition": repetition,
+                                "crowd_name": crowd_name,
+                                "measure": measure_name,
+                                "value": eval_value})
+                            log.info(d)
+                            print(d)
+                            yield d
 

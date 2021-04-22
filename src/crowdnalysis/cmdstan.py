@@ -9,6 +9,7 @@ from cmdstanpy import CmdStanModel, CmdStanMLE
 from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem
 from dataclasses import dataclass
 
+
 def _parse_var_dims_and_index_ranges(names: Tuple[str, ...]) -> Dict:
     """
     Use Stan CSV file column names to get variable names, dimensions.
@@ -67,9 +68,9 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
                      't': dcp.n_tasks,
                      'a': dcp.n_annotations,
                      'k': dcp.n_labels,
-                     't_A': (dcp.t_A + 1).tolist(),
-                     'w_A': (dcp.w_A + 1).tolist(),
-                     'ann': (dcp.f_A + 1).flatten().tolist()}
+                     't_A': (dcp.t_A + 1),
+                     'w_A': (dcp.w_A + 1),
+                     'ann': (dcp.f_A + 1).flatten()}
         prior = self.map_data_to_prior(**stan_data, **kwargs)
         stan_data.update(prior)
         return stan_data
@@ -180,13 +181,13 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         tau_prior_ = self.tau_prior(ann, k, 5.)
         pi_prior_ = self.pi_prior(k)
 
-        return {"tau_prior": tau_prior_.tolist(),
-                "pi_prior": pi_prior_.tolist()}
+        return {"tau_prior": tau_prior_,
+                "pi_prior": pi_prior_}
 
     def map_data_to_inits(self, ann, k, **kwargs):
         pi_prior_ = self.pi_prior(k)
-        return {'tau': self.tau_prior(ann, k, alpha=1.).tolist(),
-                'pi': (pi_prior_ / np.sum(pi_prior_[0])).tolist()}
+        return {'tau': self.tau_prior(ann, k, alpha=1.),
+                'pi': (pi_prior_ / np.sum(pi_prior_[0]))}
 
     def map_data_to_args(self, **kwargs):
         # args = {"iter": 2000}
@@ -323,6 +324,8 @@ class StanDSOptimizeConsensus(StanMultinomialOptimizeConsensus):
         f_A = sample.stan_variable('ann').to_numpy(dtype=int)[0] - 1
         return w_A, t_A, f_A
     '''
+
+
 class StanDSEtaOptimizeConsensus(StanDSOptimizeConsensus):
     name = "StanDSEtaOptimize"
 

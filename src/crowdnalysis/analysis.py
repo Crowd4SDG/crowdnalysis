@@ -1,12 +1,12 @@
 """Module for analysing crowd-sourced data"""
 
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 
 from . import consensus, data, measures
-
+from .consensus import GenerativeAbstractConsensus
 
 def compute_crossed(model, d_others, ref_consensuses):
     """Compute parameters when the true labels are known
@@ -21,7 +21,7 @@ def compute_crossed(model, d_others, ref_consensuses):
     """
     parameters_others = {}
     for d_name in d_others:
-        parameters_others[d_name] = model.fit_many(d_others[d_name], ref_consensuses)
+        parameters_others[d_name] = model.fit_many_from_data(d_others[d_name], ref_consensuses)
     return parameters_others
 
 
@@ -54,7 +54,7 @@ def compare_data_to_consensus(d_base, d_compare, base_consensuses, question, add
 
 
 def prospective_analysis(question, expert_data_src, expert_parameters, parameters_others, generative_model, models,
-                         measures, numbers_of_tasks, annotations_per_task, repeats=2, verbose=False):
+                         measures, dgps: List[GenerativeAbstractConsensus.DataGenerationParameters], repeats=2):
     """Makes a predictive analysis for each community based on the expert parameters.
 
     `repeats` times analysis is made for each model, for each no of tasks, for each no of annotations per task.
@@ -67,10 +67,8 @@ def prospective_analysis(question, expert_data_src, expert_parameters, parameter
         generative_model (consensus.GenerativeAbstractConsensus): #TODO (OM, 20210304): When GenerativeAbstractConsensus methods are converted to class/static methods this argument can be omitted.
         models (Dict[str, consensus.AbstractConsensus]]: Dictionary of (model_abbreviation, model_instance) pairs
         measures (Dict[str, measures.AbstractMeasure]): Dictionary of (measure name, measure class) pairs
-        numbers_of_tasks (List[int]): List of different numbers of tasks
-        annotations_per_task (List[int]): List of different numbers of annotations per task
+        dgps: List of data generation parameters
         repeats (int): Number of times the analysis should be repeated
-        verbose (bool): If True, prints stages of the analysis
 
     Returns:
         pd.DataFrame.
@@ -80,7 +78,6 @@ def prospective_analysis(question, expert_data_src, expert_parameters, parameter
     #print(expert_parameters[question])
     return pd.DataFrame.from_records(
         generative_model.evaluate_consensuses_on_linked_samples(
-            expert_parameters[question], crowds_parameters, models, measures,
-            numbers_of_tasks, annotations_per_task, repeats=repeats, verbose=verbose))
+            expert_parameters[question], crowds_parameters, models, measures, dgps, repeats=repeats))
 
 

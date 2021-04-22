@@ -73,10 +73,10 @@ class DawidSkene(GenerativeAbstractConsensus):
     @dataclass
     class DataGenerationParameters(GenerativeAbstractConsensus.DataGenerationParameters):
         n_tasks: int = 10
-        num_annotations_per_task: int = 2
+        n_annotations_per_task: int = 2
 
         def __post_init__(self):
-            self.n_annotations = self.n_tasks * self.num_annotations_per_task
+            self.n_annotations = self.n_tasks * self.n_annotations_per_task
 
     def get_dimensions(self, parameters: Parameters):
         return parameters.tau.shape[0], parameters.pi.shape[0], parameters.pi.shape[2]
@@ -98,13 +98,13 @@ class DawidSkene(GenerativeAbstractConsensus):
         n_labels = parameters.pi.shape[2]
         n_workers = parameters.pi.shape[0]  #
         # Sample the annotators
-        annotators = np.random.choice(n_workers, size=(dgp.n_tasks, dgp.num_annotations_per_task))
+        annotators = np.random.choice(n_workers, size=(dgp.n_tasks, dgp.n_annotations_per_task))
         labels_and_annotators = annotators + tasks[:, np.newaxis] * n_workers
         labels_and_annotators = labels_and_annotators.flatten()
         unique_la, inverse_la, counts_la = np.unique(labels_and_annotators, return_inverse=True, return_counts=True)
         w_A = np.zeros(dgp.n_annotations, dtype=np.int32)
         f_A = np.zeros(dgp.n_annotations, dtype=np.int32)
-        t_A = np.arange(dgp.n_annotations, dtype=np.int32) // dgp.num_annotations_per_task
+        t_A = np.arange(dgp.n_annotations, dtype=np.int32) // dgp.n_annotations_per_task
         for i_la, label_and_annotator in enumerate(unique_la):
             real_label = label_and_annotator // n_workers
             annotator_index = label_and_annotator % n_workers

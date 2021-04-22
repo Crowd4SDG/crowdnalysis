@@ -1,14 +1,37 @@
 from typing import Type
 
 from . import consensus
+from .consensus import DiscreteConsensusProblem
 from . import dawid_skene
 from . import majority_voting
 from . import probabilistic
 from . import cmdstan
+from .data import Data
+
 
 class Factory:
     """Factory class for consensus algorithms"""
     algorithms = {}
+
+    @classmethod
+    def make(cls, name, **kwargs):
+        """Return an instance of the algorithm registered with the name specified
+
+        Args:
+            name (str):
+
+        Returns:
+            Type[consensus.AbstractConsensus]: The class not its instance.
+
+        Raises:
+            KeyError: If the algorithm is not registered.
+        """
+
+        try:
+            return cls.algorithms[name](**kwargs)
+        except KeyError:
+            raise KeyError("{} algorithm is not registered. "
+                           "Available options are {}.".format(name, list(cls.algorithms.keys())))
 
     @classmethod
     def get_consensus_algorithm(cls, name):
@@ -43,6 +66,11 @@ class Factory:
         """
         cls.algorithms[algorithm.name] = algorithm
         return None
+
+# This wrapper deals with the Data interface
+
+
+
 
 
 Factory.register_consensus_algorithm(majority_voting.MajorityVoting)
