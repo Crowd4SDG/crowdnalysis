@@ -7,12 +7,12 @@ from .consensus import AbstractConsensus, DiscreteConsensusProblem
 from .data import Data
 
 
-def get_n_and_ranges(d: Data, question: str) -> Tuple[np.ndarray, int, int, int]:
+def get_n_and_ranges(d: Data, question: str) -> Tuple[np.ndarray, int]:
     """Return 2D (n_tasks, n_labels) annotation count matrix `n`, and n_tasks, n_labels, n_annotators values
 
     where n_tasks: # of tasks, n_labels: # of labels, n_annotators: # of annotators
     """
-    dcp = DiscreteConsensusProblem.from_data(d, question)
+    dcp = d.get_dcp(question)
     n = dcp.compute_n().sum(axis=0)
     return n, dcp.n_tasks
 

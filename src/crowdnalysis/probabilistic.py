@@ -1,9 +1,9 @@
 import numpy as np
 
-from .consensus import AbstractConsensus, DiscreteConsensusProblem
+from .consensus import AbstractSimpleConsensus, DiscreteConsensusProblem
 
 
-class Probabilistic(AbstractConsensus):
+class Probabilistic(AbstractSimpleConsensus):
     name = "Probabilistic"
     
     def __init__(self):
@@ -14,4 +14,4 @@ class Probabilistic(AbstractConsensus):
         n = dcp.compute_n().sum(axis=0) + softening
         consensus = n / np.sum(n, axis=1)[:, np.newaxis]
         # print("Probabilistic._probabilistic_consensus ({}) -> \n".format(consensus.shape), consensus)
-        return consensus, AbstractConsensus.Parameters()
+        return consensus, AbstractSimpleConsensus.Parameters()

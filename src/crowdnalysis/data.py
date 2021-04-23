@@ -1,6 +1,19 @@
 import pandas as pd
 import numpy as np
-
+from .problems import JSONDataClass, DiscreteConsensusProblem
+import dataclasses
+from dataclasses import dataclass
+#
+# class AbstractCondition:
+#     def filter(self):
+#
+# @dataclass
+# class BasicCondition(JSONDataClass, AbstractCondition):
+#     question: Any = None
+#     value: Any = None
+#
+# class AndCondition()
+#     init(el1,el2):
 
 class Data:
     """
@@ -28,6 +41,7 @@ class Data:
         self.annotator_ids = None
         self.annotator_index_from_id = None
         self.n_annotators = None
+        self.conditions = None
 
     @classmethod
     def from_df(cls, df, data_src=None, task_id_col_name="task_id", annotator_id_col_name="annotator_id",
@@ -69,6 +83,18 @@ class Data:
 
         return d
 
+    # condition is a list of question, value
+    # The question is asked if all conditions are satisfied
+    def set_condition(self, question, condition):
+        self.question_valid_rows[question] = filter(self.df, condition)
+        #for each question compute valid_rows
+
+    def valid_rows(self, question):
+        if question in self.question_valid_rows:
+            return self.question_valid_rows[question]
+        else:
+            return self.df.all_rows
+
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=[]):
         df = df.copy()
@@ -94,7 +120,7 @@ class Data:
     def from_pybossa(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
                      task_info_file=None, task_file=None, field_task_key="info_media_0", other_columns=[], delimiter=","):
         """ 
-        Create a Data object from a Pyossa file.
+        Create a Data object from a Pybossa file.
         """
 
         def get_tasks(t_csv, ti_csv, field_task_id, field_task_key):
@@ -155,20 +181,24 @@ class Data:
     def n_labels(self, question):
         return len(self.df[question].cat.categories)
 
+
     def get_tasks(self, question):
-        return self.df[[self.COL_TASK_INDEX]].to_numpy()
+        valid_rows = self.valid_rows(question)
+        return self.df.loc[valid_rows, self.COL_TASK_INDEX].to_numpy()
 
     def get_workers(self, question):
-        return self.df[[self.COL_WORKER_INDEX]].to_numpy()
+        valid_rows = self.valid_rows(question)
+        return self.df.loc[valid_rows,self.COL_WORKER_INDEX].to_numpy()
 
     def get_annotations(self, question):
-        return self.df[[question+"_index"]].to_numpy()
+        valid_rows = self.valid_rows(question)
+        return self.df.loc[valid_rows,question+"_index"].to_numpy()
 
-    def get_question_matrix(self, question):
-        df = self.df[[self.COL_TASK_INDEX, self.COL_WORKER_INDEX, question+"_index"]]
+    #def get_question_matrix(self, question):
+    #    df = self.df[[self.COL_TASK_INDEX, self.COL_WORKER_INDEX, question+"_index"]]
         #print(df[question].cat.codes)
         #df[question] = df[question].cat.codes
-        return df.to_numpy()
+    #    return df.to_numpy()
 
     def get_categories(self):
         categories = {}
@@ -197,3 +227,12 @@ class Data:
         if unique:
             df_vals = df_vals.drop_duplicates()
         return df_vals.to_numpy()
+
+    def get_dcp(self, question):
+
+        return DiscreteConsensusProblem(n_tasks=self.n_tasks,
+                                        n_workers=self.n_annotators,
+                                        t_A=self.get_tasks(question),
+                                        w_A=self.get_workers(question),
+                                        f_A=self.get_annotations(question),
+                                        n_labels=self.n_labels(question))
