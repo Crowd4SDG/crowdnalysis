@@ -43,7 +43,7 @@ class Data:
         self.annotator_ids = None
         self.annotator_index_from_id = None
         self.n_annotators = None
-        self.conditions = None  # type: List[Tuple[str, Union[Any, List[any]]]]
+        self.conditions = None  # type: List[Tuple[str, Union[Any, List[Any]]]]
         self.question_valid_rows = {}
 
     @classmethod
@@ -87,19 +87,19 @@ class Data:
         return d
 
     @staticmethod
-    def _make_query(conditions: List[Tuple[str, Union[Any, List[any]]]]):
+    def _make_query(conditions: List[Tuple[str, Union[Any, List[Any]]]]):
         """Creates a query for use in DataFrame.query()
 
         Examples:
-            >>> _make_query([('info_0', 'Yes'), ('info_2', ['Yes', 'Not answered'])
-            "`info_0`=='Yes' & `info_2` in ['Yes', 'Not answered']"
+            >>> _make_query([('info_0', 5), ('info_2', ['Yes', 'Not answered'])])
+            "`info_0`==5 & `info_2` in ['Yes', 'Not answered']"
         """
         def esc_str(v):
             return v if not isinstance(v, str) else "'{}'".format(v)
         return " & ".join("`{}`{}{}".format(q, "==" if not isinstance(a, list) else " in ", str(esc_str(a)))
                           for q, a in conditions)
 
-    def set_condition(self, question: str, conditions: List[Tuple[str, Union[Any, List[any]]]]):
+    def set_condition(self, question: str, conditions: List[Tuple[str, Union[Any, List[Any]]]]):
         """Identifies valid rows of data.df for the `question` according to the `conditions`.
 
         The question is asked if all conditions are satisfied.
@@ -111,7 +111,7 @@ class Data:
                 The answer can be a single literal or a list of literals.
 
         Examples:
-            set_condition('info_3', [('info_0', 'Yes'), ('info_2', ['Yes', 'Not answered'])
+            set_condition('info_3', [('info_0', 'Yes'), ('info_2', ['Yes', 'Not answered'])])
 
         """
         query_ = Data._make_query(conditions)
