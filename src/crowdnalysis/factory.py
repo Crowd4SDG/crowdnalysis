@@ -1,5 +1,6 @@
 from typing import Type
 
+import crowdnalysis.simple
 from . import consensus
 from .consensus import DiscreteConsensusProblem
 from . import dawid_skene
@@ -73,8 +74,8 @@ class Factory:
 
 
 
-Factory.register_consensus_algorithm(majority_voting.MajorityVoting)
-Factory.register_consensus_algorithm(probabilistic.Probabilistic)
+Factory.register_consensus_algorithm(crowdnalysis.simple.MajorityVoting)
+Factory.register_consensus_algorithm(crowdnalysis.simple.Probabilistic)
 Factory.register_consensus_algorithm(dawid_skene.DawidSkene)
 Factory.register_consensus_algorithm(cmdstan.StanMultinomialOptimizeConsensus)
 Factory.register_consensus_algorithm(cmdstan.StanMultinomialEtaOptimizeConsensus)

@@ -1,7 +1,7 @@
 import dataclasses
 from . import log
 from importlib.resources import path as irpath
-from typing import Any, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional
 
 import numpy as np
 from cmdstanpy import CmdStanModel, CmdStanMLE
@@ -211,7 +211,7 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         return 1, None
 
     def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None)\
-            -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+            -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int]]:
         model = self.sample_annotations_model()
         sample = model.sample(data={'w': 1,
                                     't': dgp.n_tasks,
@@ -230,7 +230,7 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         f_A = sample.stan_variable('ann').to_numpy(dtype=int)[0]
         f_A -= 1
 
-        return w_A, t_A, f_A
+        return w_A, t_A, f_A, list(range(parameters.tau.shape[0]))
 
 
 class StanMultinomialEtaOptimizeConsensus(StanMultinomialOptimizeConsensus):

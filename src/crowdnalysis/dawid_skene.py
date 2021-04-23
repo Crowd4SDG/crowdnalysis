@@ -3,7 +3,7 @@ import numpy as np
 from . import log
 
 from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem
-from .probabilistic import Probabilistic
+from .simple import Probabilistic
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -92,11 +92,11 @@ class DawidSkene(GenerativeAbstractConsensus):
             -> Tuple[int, Optional[np.ndarray]]:
         return parameters.pi.shape[0], None
 
-    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None):
+    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters,
+                           parameters: Optional[Parameters] = None):
         if parameters is None:
             parameters = self.Parameters()
-        n_labels = parameters.pi.shape[2]
-        n_workers = parameters.pi.shape[0]  #
+        n_workers, n_classes, n_labels = parameters.pi.shape
         # Sample the annotators
         annotators = np.random.choice(n_workers, size=(dgp.n_tasks, dgp.n_annotations_per_task))
         labels_and_annotators = annotators + tasks[:, np.newaxis] * n_workers
@@ -113,7 +113,8 @@ class DawidSkene(GenerativeAbstractConsensus):
             ca_indexes = np.equal(inverse_la, i_la)
             w_A[ca_indexes] = annotator_index
             f_A[ca_indexes] = emitted_labels
-        return w_A, t_A, f_A
+        classes = list(range(n_classes))
+        return w_A, t_A, f_A, classes
 
     # Private methods
 

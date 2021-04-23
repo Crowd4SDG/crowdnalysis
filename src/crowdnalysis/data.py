@@ -181,7 +181,6 @@ class Data:
     def n_labels(self, question):
         return len(self.df[question].cat.categories)
 
-
     def get_tasks(self, question):
         valid_rows = self.valid_rows(question)
         return self.df.loc[valid_rows, self.COL_TASK_INDEX].to_numpy()
@@ -229,7 +228,6 @@ class Data:
         return df_vals.to_numpy()
 
     def get_dcp(self, question):
-
         return DiscreteConsensusProblem(n_tasks=self.n_tasks,
                                         n_workers=self.n_annotators,
                                         t_A=self.get_tasks(question),

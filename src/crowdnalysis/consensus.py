@@ -95,7 +95,7 @@ class GenerativeAbstractConsensus(AbstractConsensus):
         raise NotImplementedError
 
     def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None) \
-            -> Tuple[int, Optional[np.ndarray]]:
+            -> Tuple[int, np.ndarray]:
         raise NotImplementedError
 
     def sample_workers(self, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None)\
@@ -103,7 +103,7 @@ class GenerativeAbstractConsensus(AbstractConsensus):
         raise NotImplementedError
 
     def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters]=None)\
-            -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+            -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int]]:
         raise NotImplementedError
 
     def sample(self, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None):
@@ -112,14 +112,15 @@ class GenerativeAbstractConsensus(AbstractConsensus):
 
     def _sample_others(self, n_tasks, tasks, dgp: DataGenerationParameters, parameters: Optional[AbstractConsensus.Parameters] = None):
         n_workers, workers = self.sample_workers(dgp, parameters)
-        w_A, t_A, f_A = self.sample_annotations(tasks, workers, dgp, parameters)
-        log.debug(type(w_A.dtype))
+        w_A, t_A, f_A, classes = self.sample_annotations(tasks, workers, dgp, parameters)
+        #log.debug(type(w_A.dtype))
         return DiscreteConsensusProblem(n_tasks=n_tasks,
                                         f_T=tasks,
                                         n_workers=n_workers,
                                         w_A=w_A,
                                         t_A=t_A,
-                                        f_A=f_A)
+                                        f_A=f_A,
+                                        classes=classes)
 
     # TODO: Everything down this comment has to be worked on after freezing the main interfaces.
     # Creates a set of linked discrete consensus problems, with linked meaning that they share the very same set of tasks.
