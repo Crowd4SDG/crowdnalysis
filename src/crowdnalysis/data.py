@@ -1,3 +1,5 @@
+from typing import Tuple, Any, List, Union
+
 import pandas as pd
 import numpy as np
 from .problems import JSONDataClass, DiscreteConsensusProblem
@@ -41,7 +43,8 @@ class Data:
         self.annotator_ids = None
         self.annotator_index_from_id = None
         self.n_annotators = None
-        self.conditions = None
+        self.conditions = None  # type: List[Tuple[str, Union[Any, List[any]]]]
+        self.question_valid_rows = {}
 
     @classmethod
     def from_df(cls, df, data_src=None, task_id_col_name="task_id", annotator_id_col_name="annotator_id",
@@ -83,17 +86,44 @@ class Data:
 
         return d
 
-    # condition is a list of question, value
-    # The question is asked if all conditions are satisfied
-    def set_condition(self, question, condition):
-        self.question_valid_rows[question] = filter(self.df, condition)
-        #for each question compute valid_rows
+    @staticmethod
+    def _make_query(conditions: List[Tuple[str, Union[Any, List[any]]]]):
+        """Creates a query for use in DataFrame.query()
 
-    def valid_rows(self, question):
+        Examples:
+            >>> _make_query([('info_0', 'Yes'), ('info_2', ['Yes', 'Not answered'])
+            "`info_0`=='Yes' & `info_2` in ['Yes', 'Not answered']"
+        """
+        def esc_str(v):
+            return v if not isinstance(v, str) else "'{}'".format(v)
+        return " & ".join("`{}`{}{}".format(q, "==" if not isinstance(a, list) else " in ", str(esc_str(a)))
+                          for q, a in conditions)
+
+    def set_condition(self, question: str, conditions: List[Tuple[str, Union[Any, List[any]]]]):
+        """Identifies valid rows of data.df for the `question` according to the `conditions`.
+
+        The question is asked if all conditions are satisfied.
+        Hence, `conditions` are treated as a conjunction of clauses.
+
+        Args:
+            question: Column name in the `Data.df` dataframe
+            conditions: List of (column name for dependency question, answer).
+                The answer can be a single literal or a list of literals.
+
+        Examples:
+            set_condition('info_3', [('info_0', 'Yes'), ('info_2', ['Yes', 'Not answered'])
+
+        """
+        query_ = Data._make_query(conditions)
+        # print("question:", question, "query:", query_)
+        self.question_valid_rows[question] = self.df.query(query_).index.tolist()
+
+    def valid_rows(self, question: str) -> List:
+        """Return the indices of the valid rows for the `question`"""
         if question in self.question_valid_rows:
             return self.question_valid_rows[question]
         else:
-            return self.df.all_rows
+            return self.df.index.tolist()
 
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=[]):
@@ -182,16 +212,16 @@ class Data:
         return len(self.df[question].cat.categories)
 
     def get_tasks(self, question):
-        valid_rows = self.valid_rows(question)
-        return self.df.loc[valid_rows, self.COL_TASK_INDEX].to_numpy()
+        ix = self.valid_rows(question)
+        return self.df.iloc[ix][self.COL_TASK_INDEX].to_numpy()
 
     def get_workers(self, question):
-        valid_rows = self.valid_rows(question)
-        return self.df.loc[valid_rows,self.COL_WORKER_INDEX].to_numpy()
+        ix = self.valid_rows(question)
+        return self.df.iloc[ix][self.COL_WORKER_INDEX].to_numpy()
 
     def get_annotations(self, question):
-        valid_rows = self.valid_rows(question)
-        return self.df.loc[valid_rows,question+"_index"].to_numpy()
+        ix = self.valid_rows(question)
+        return self.df.iloc[ix][question + "_index"].to_numpy()
 
     #def get_question_matrix(self, question):
     #    df = self.df[[self.COL_TASK_INDEX, self.COL_WORKER_INDEX, question+"_index"]]
