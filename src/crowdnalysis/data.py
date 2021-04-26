@@ -43,7 +43,7 @@ class Data:
         self.annotator_ids = None
         self.annotator_index_from_id = None
         self.n_annotators = None
-        self.conditions = None  # type: List[Tuple[str, Union[Any, List[Any]]]]
+        self.conditions = None
         self.question_valid_rows = {}
 
     @classmethod
@@ -87,43 +87,45 @@ class Data:
         return d
 
     @staticmethod
-    def _make_query(conditions: List[Tuple[str, Union[Any, List[Any]]]]):
-        """Creates a query for use in DataFrame.query()
+    def make_and_condition(conditions: List[Tuple[str, Union[Any, List[Any]]]]):
+        """Utility function that creates a conjunctive clause from `conditions` to be used in `Data.set_condition()`.
+
+        Args:
+            conditions: (column name, value(s)). The value can be a single literal or a list of literals.
 
         Examples:
-            >>> _make_query([('info_0', 5), ('info_2', ['Yes', 'Not answered'])])
-            "`info_0`==5 & `info_2` in ['Yes', 'Not answered']"
+            >>> Data.make_and_condition([('info_0', 5), ('info_1', 'Yes'), ('info_2', ['Yes', True])])
+            "`info_0`==5 & `info_1`=='Yes' & `info_2` in ['Yes', True]"
         """
         def esc_str(v):
             return v if not isinstance(v, str) else "'{}'".format(v)
-        return " & ".join("`{}`{}{}".format(q, "==" if not isinstance(a, list) else " in ", str(esc_str(a)))
-                          for q, a in conditions)
+        return " & ".join("`{cn}`{op}{v}".format(cn=cn, op="==" if not isinstance(v, list) else " in ",
+                                                 v=str(esc_str(v)))
+                          for cn, v in conditions)
 
-    def set_condition(self, question: str, conditions: List[Tuple[str, Union[Any, List[Any]]]]):
-        """Identifies valid rows of data.df for the `question` according to the `conditions`.
+    def set_condition(self, question: str, conditions: str):
+        """Identifies valid rows of `Data.df` for the `question` according to the `conditions`.
 
-        The question is asked if all conditions are satisfied.
-        Hence, `conditions` are treated as a conjunction of clauses.
+        The `question` is asked to an annotator if all conditions are satisfied.
 
         Args:
-            question: Column name in the `Data.df` dataframe
-            conditions: List of (column name for dependency question, answer).
-                The answer can be a single literal or a list of literals.
+            question: Column name for the asked question in the `Data.df` dataframe
+            conditions: A valid string to be used in `pandas.DataFrame.query()` that sets the dependency conditions for
+                the `question`.
 
         Examples:
-            set_condition('info_3', [('info_0', 'Yes'), ('info_2', ['Yes', 'Not answered'])])
+            set_condition("info_3", "`info_0`==5 & `info_1`=='Yes' & `info_2` in ['Yes', True]")
 
         """
-        query_ = Data._make_query(conditions)
-        # print("question:", question, "query:", query_)
-        self.question_valid_rows[question] = self.df.query(query_).index.tolist()
+        if conditions:  # silently ignore empty conditions
+            self.question_valid_rows[question] = self.df.query(conditions).index
 
     def valid_rows(self, question: str) -> List:
         """Return the indices of the valid rows for the `question`"""
         if question in self.question_valid_rows:
             return self.question_valid_rows[question]
         else:
-            return self.df.index.tolist()
+            return self.df.index
 
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=[]):
