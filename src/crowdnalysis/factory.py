@@ -1,13 +1,7 @@
-from typing import Type
 
 import crowdnalysis.simple
-from . import consensus
-from .consensus import DiscreteConsensusProblem
 from . import dawid_skene
-from . import majority_voting
-from . import probabilistic
 from . import cmdstan
-from .data import Data
 
 
 class Factory:
@@ -67,11 +61,6 @@ class Factory:
         """
         cls.algorithms[algorithm.name] = algorithm
         return None
-
-# This wrapper deals with the Data interface
-
-
-
 
 
 Factory.register_consensus_algorithm(crowdnalysis.simple.MajorityVoting)

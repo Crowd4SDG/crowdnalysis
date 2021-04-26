@@ -21,8 +21,8 @@ from .problems import DiscreteConsensusProblem
 class Data:
     """
     This is the main class for storing answers
-    - by a set of annotators, 
-    - to a set of tasks, 
+    - by a set of annotators,
+    - to a set of tasks,
     - each task with the very same questions.
     """
 
@@ -31,7 +31,7 @@ class Data:
 
     def __init__(self):
         """
-        The Data object must not be initialized by constructor. 
+        The Data object must not be initialized by constructor.
         Instead, use the from methods
         """
         # Make instance attributes' definitions explicit
@@ -49,10 +49,10 @@ class Data:
     @classmethod
     def from_df(cls, df, data_src=None, task_id_col_name="task_id", annotator_id_col_name="annotator_id",
                 questions=None, task_ids=None, categories=None):
-        """ 
+        """
         Create a Data object from dataframe df.
-        The dataframe contains one row for each annotation, 
-        each row has a task_id, an annotator id and the answers to a set of 
+        The dataframe contains one row for each annotation,
+        each row has a task_id, an annotator id and the answers to a set of
         questions, each answer in one column
         """
         d = Data()
@@ -161,7 +161,7 @@ class Data:
     def from_pybossa(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
                      task_info_file=None, task_file=None, field_task_key="info_media_0", other_columns=None,
                      delimiter=","):
-        """ 
+        """
         Create a Data object from a Pybossa file.
         """
 

@@ -3,6 +3,7 @@ from ..dawid_skene import DawidSkene
 from . import close, distance
 import numpy as np
 
+
 def sample():
     dgp = DawidSkene.DataGenerationParameters(n_tasks=1000, n_annotations_per_task=20)
     parameters = DawidSkene.Parameters(tau=np.array([0.3, 0.7]), pi=np.array([[[0.8, 0.1, 0.1], [0.1, 0.8, 0.1]]]))
@@ -10,10 +11,12 @@ def sample():
     problem = ds.sample(dgp, parameters)
     return problem, parameters
 
+
 def test_sampling():
     problem, parameters = sample()
     log.info(problem)
     log.info(parameters)
+
 
 def test_fit_and_compute_consensus():
     problem, parameters = sample()
@@ -26,10 +29,12 @@ def test_fit_and_compute_consensus():
     assert close(parameters_learned.tau, parameters.tau)
     assert close(parameters_learned.pi, parameters.pi)
 
+
 # TODO: Fill in the test methods below
 
 def test_fit():
     pass
+
 
 def test_compute_consensus():
     pass
