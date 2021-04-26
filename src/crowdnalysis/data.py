@@ -190,9 +190,9 @@ class Data:
     @classmethod
     def from_mturk(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
                    other_columns=None, delimiter=","):
+        """Create a Data object from an Amazon MTurk file."""
         if other_columns is None:
             other_columns = []
-        """Create a Data object from an Amazon MTurk file."""
         return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, categories,
                                      other_columns=other_columns, delimiter=delimiter)
 
@@ -200,9 +200,9 @@ class Data:
     def from_aidr(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, other_columns=None,
                   delimiter=","):
         """Create a Data object from an AIDR file."""
-        # Note: Does NOT send 'categories' arg
         if other_columns is None:
             other_columns = []
+        # Note: Does NOT send 'categories' arg
         return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, other_columns=other_columns,
                                      delimiter=delimiter)
 
