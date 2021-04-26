@@ -1,4 +1,4 @@
-from typing import Tuple, Any, List, Union
+from typing import Tuple, Any, List, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -45,6 +45,7 @@ class Data:
         self.annotator_index_from_id = None
         self.n_annotators = None
         self.question_valid_rows = {}
+        self.question_classes = {}
 
     @classmethod
     def from_df(cls, df, data_src=None, task_id_col_name="task_id", annotator_id_col_name="annotator_id",
@@ -129,6 +130,14 @@ class Data:
             return self.question_valid_rows[question]
         else:
             return self.df.index
+
+    def set_question_classes(self, question: str, classes: Optional[List[str]] = None):
+        if question in self.df.columns:
+            if classes is None:
+                del self.question_classes[question]
+            else:
+                cat = self.df[question].dtype
+                self.question_classes[question] = [cat.get_loc(x) for x in classes]
 
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=None):
@@ -283,9 +292,14 @@ class Data:
         return df_values.to_numpy()
 
     def get_dcp(self, question):
+        if question in self.question_classes:
+            classes = self.question_classes[question]
+        else:
+            classes = list(range(self.n_labels(question)))
         return DiscreteConsensusProblem(n_tasks=self.n_tasks,
                                         n_workers=self.n_annotators,
                                         t_A=self.get_tasks(question),
                                         w_A=self.get_workers(question),
                                         f_A=self.get_annotations(question),
-                                        n_labels=self.n_labels(question))
+                                        n_labels=self.n_labels(question),
+                                        classes=classes)
