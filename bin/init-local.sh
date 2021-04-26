@@ -12,7 +12,7 @@ CMDSTAN_DIR="$HOME/.cmdstan"
 if [[ "$OSTYPE" == "linux-gnu"*  ||  "$OSTYPE" == "darwin"* ]]; then
   if [[ ! -d "$CMDSTAN_DIR" ]]; then
     echo "Installing CmdStan library into '${CMDSTAN_DIR}', please wait..."
-    install_cmdstan
+    install_cmdstan -d $CMDSTAN_DIR
     echo "CmdStan library installed."
   else
     echo "CmdStan library already installed in '${CMDSTAN_DIR}'."
