@@ -17,39 +17,35 @@ class DawidSkene(GenerativeAbstractConsensus):
         tau: np.ndarray = np.array([0.5, 0.5])
         pi: np.ndarray = np.array([[[0.9, 0.1], [0.2, 0.8]]])
 
-    def __init__(self):
-        self.n = None
-        self.T = None
-        self.tau = None
-        self.logpi = None
-
-    def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, max_iterations=10000, tolerance=1e-3, prior=1.0, verbose=False, init_params=None):
-        self.n = dcp.compute_n()
+    @classmethod
+    def fit_and_compute_consensus(cls, dcp: DiscreteConsensusProblem, max_iterations=10000,
+                                  tolerance=1e-3, prior=1.0, verbose=False, init_params=None):
+        n = dcp.compute_n()
         # First estimate of T_{i,j} is done by probabilistic consensus
         if init_params is not None:
-            self.tau = init_params.tau
-            self.logpi = np.log(init_params.pi)
-            self.T, _ = Probabilistic.fit_and_compute_consensus(dcp, softening=prior)
+            tau = init_params.tau
+            log_pi = np.log(init_params.pi)
+            T, _ = Probabilistic.fit_and_compute_consensus(dcp, softening=prior)
         else:
-            self.T, _ = Probabilistic.fit_and_compute_consensus(dcp, softening=prior)
+            T, _ = Probabilistic.fit_and_compute_consensus(dcp, softening=prior)
             # Initialize the percentages of each label
-            self.tau = self._m_step_p(self.T, prior)
+            tau = cls._m_step_p(T, prior)
 
             # Initialize the errors
-            self.logpi = self._m_step_logpi(self.T, self.n, prior)
+            log_pi = cls._m_step_log_pi(T, n, prior)
 
         has_converged = False
         num_iterations = 0
-        any_nan = (np.isnan(self.T).any() or np.isnan(self.tau).any() or np.isnan(self.logpi).any())
+        any_nan = (np.isnan(T).any() or np.isnan(tau).any() or np.isnan(log_pi).any())
         while (num_iterations < max_iterations and not has_converged) and not any_nan:
             # Expectation step
-            old_T = self.T
-            self.T = self._e_step(self.n, self.logpi, self.tau)
+            old_T = T
+            T = cls._e_step(n, log_pi, tau)
             # Maximization
-            self.tau, self.logpi = self._m_step(self.T, self.n, prior)
-            has_converged = np.allclose(old_T, self.T, atol=tolerance)
+            tau, log_pi = cls._m_step(T, n, prior)
+            has_converged = np.allclose(old_T, T, atol=tolerance)
             num_iterations += 1
-            any_nan = (np.isnan(self.T).any() or np.isnan(self.tau).any() or np.isnan(self.logpi).any())
+            any_nan = (np.isnan(T).any() or np.isnan(tau).any() or np.isnan(log_pi).any())
         if any_nan:
             log.info("NaN values detected")
         elif has_converged:
@@ -57,17 +53,18 @@ class DawidSkene(GenerativeAbstractConsensus):
         else:
             log.info("The maximum of %i iterations has been reached", max_iterations)
 
-        return self.T, self.Parameters(tau=self.tau,pi=np.exp(self.logpi))
+        return T, cls.Parameters(tau=tau, pi=np.exp(log_pi))
 
-    def fit(self,  dcp:DiscreteConsensusProblem, T, prior=1.0):
+    @classmethod
+    def fit(cls, dcp: DiscreteConsensusProblem, T, prior=1.0):
         n = dcp.compute_n()
-        tau, logpi = self._m_step(T, n, prior)
-        return self.Parameters(tau=tau,pi=np.exp(logpi))
+        tau, log_pi = cls._m_step(T, n, prior)
+        return cls.Parameters(tau=tau, pi=np.exp(log_pi))
 
-    def compute_consensus(self, dcp:DiscreteConsensusProblem, parameters: Parameters):
+    @classmethod
+    def compute_consensus(cls, dcp: DiscreteConsensusProblem, parameters: Parameters):
         n = dcp.compute_n()
-        return self._e_step(n, np.log(parameters.pi), parameters.tau)
-
+        return cls._e_step(n, np.log(parameters.pi), parameters.tau)
 
     # Methods from GenerativeAbstractConsensus
     @dataclass
@@ -118,16 +115,19 @@ class DawidSkene(GenerativeAbstractConsensus):
 
     # Private methods
 
-    def _m_step(self, T, n, prior):
-        return (self._m_step_p(T, prior), self._m_step_logpi(T, n, prior))
+    @classmethod
+    def _m_step(cls, T, n, prior):
+        return cls._m_step_p(T, prior), cls._m_step_log_pi(T, n, prior)
 
-    def _m_step_p(self, T, prior):
+    @classmethod
+    def _m_step_p(cls, T, prior):
         p = np.sum(T, axis=0)
         p += prior
         p /= np.sum(p)
         return p
 
-    def _m_step_logpi(self, T, n, prior):
+    @classmethod
+    def _m_step_log_pi(cls, T, n, prior):
         log.debug(T.shape)
         log.debug(n.shape)
         _pi = np.swapaxes(np.dot(T.transpose(), n), 0, 1)
@@ -136,11 +136,12 @@ class DawidSkene(GenerativeAbstractConsensus):
         _pi /= sums[:, :, np.newaxis]
         return np.log(_pi)
 
-    def _e_step(self, n, logpi, tau):
-        logT = np.tensordot(n, logpi, axes=([0, 2], [0, 2]))
-        logT += np.log(tau[np.newaxis, :])
-        maxLogT = np.max(logT)
-        logSumT = np.log(np.sum(np.exp(logT-maxLogT), axis=1)) + maxLogT
-        logT -= logSumT[:,np.newaxis]
-        T = np.exp(logT)
+    @classmethod
+    def _e_step(cls, n, log_pi, tau):
+        log_T = np.tensordot(n, log_pi, axes=([0, 2], [0, 2]))
+        log_T += np.log(tau[np.newaxis, :])
+        maxLogT = np.max(log_T)
+        logSumT = np.log(np.sum(np.exp(log_T-maxLogT), axis=1)) + maxLogT
+        log_T -= logSumT[:, np.newaxis]
+        T = np.exp(log_T)
         return T

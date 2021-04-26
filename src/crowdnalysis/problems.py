@@ -6,6 +6,7 @@ from typing import List, Optional, Dict
 from numpyencoder import NumpyEncoder
 from itertools import product
 
+
 @dataclass
 class JSONDataClass:
     def to_json(self):
@@ -21,6 +22,7 @@ class JSONDataClass:
         keys, values = zip(*options.items())
         ds = [dict(zip(keys, bundle)) for bundle in product(*values)]
         return [cls(**d) for d in ds]
+
 
 @dataclass
 class ConsensusProblem(JSONDataClass):
@@ -62,7 +64,6 @@ class ConsensusProblem(JSONDataClass):
         if len(self.f_A.shape) == 1:
             self.f_A = self.f_A[:, np.newaxis]
         self.n_annotations = self.f_A.shape[0]
-
 
 
 @dataclass

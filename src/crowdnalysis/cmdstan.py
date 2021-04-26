@@ -202,7 +202,7 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
                               inits=dataclasses.asdict(parameters),
                               fixed_param=True,
                               iter_sampling=1)
-        t_C = sample.stan_variable('t_C').to_numpy(dtype=int)[0] - 1
+        t_C = sample.stan_variable('t_C').astype(int)[0] - 1
         log.debug("Tasks type: %s", type(t_C.dtype))
         return dgp.n_tasks, t_C
 
@@ -221,13 +221,13 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
                               inits=dataclasses.asdict(parameters),
                               fixed_param=True,
                               iter_sampling=1)
-        t_A = sample.stan_variable('t_A').to_numpy(dtype=int)[0]
+        t_A = sample.stan_variable('t_A').astype(int)[0]
         t_A -= 1
-        w_A = sample.stan_variable('w_A').to_numpy(dtype=int)[0]
+        w_A = sample.stan_variable('w_A').astype(int)[0]
         log.debug(type(w_A.dtype))
         w_A -= 1
         log.debug(type(w_A.dtype))
-        f_A = sample.stan_variable('ann').to_numpy(dtype=int)[0]
+        f_A = sample.stan_variable('ann').astype(int)[0]
         f_A -= 1
 
         return w_A, t_A, f_A, list(range(parameters.tau.shape[0]))

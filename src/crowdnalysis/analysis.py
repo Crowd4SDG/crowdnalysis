@@ -5,8 +5,9 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from . import consensus, data, measures
+from . import consensus, data
 from .consensus import GenerativeAbstractConsensus
+
 
 def compute_crossed(model, d_others, ref_consensuses):
     """Compute parameters when the true labels are known
@@ -64,7 +65,9 @@ def prospective_analysis(question, expert_data_src, expert_parameters, parameter
         expert_data_src (str): Data source of the experts' data
         expert_parameters (Dict[str, np.ndarray]): {_p: [...], _pi: [...]}
         parameters_others (Dict[str, Dict[str, np.ndarray]]): {data_source: {_p: [...], _pi: [...]}}:
-        generative_model (consensus.GenerativeAbstractConsensus): #TODO (OM, 20210304): When GenerativeAbstractConsensus methods are converted to class/static methods this argument can be omitted.
+        generative_model (consensus.GenerativeAbstractConsensus):
+        # TODO (OM, 20210304): When GenerativeAbstractConsensus methods are converted to class/static methods
+        # this argument can be omitted.
         models (Dict[str, consensus.AbstractConsensus]]: Dictionary of (model_abbreviation, model_instance) pairs
         measures (Dict[str, measures.AbstractMeasure]): Dictionary of (measure name, measure class) pairs
         dgps: List of data generation parameters
@@ -75,9 +78,7 @@ def prospective_analysis(question, expert_data_src, expert_parameters, parameter
     """
     crowds_parameters = {name: parameters_others[name][question] for name in parameters_others}
     crowds_parameters[expert_data_src] = expert_parameters[question]
-    #print(expert_parameters[question])
+    # print(expert_parameters[question])
     return pd.DataFrame.from_records(
         generative_model.evaluate_consensuses_on_linked_samples(
             expert_parameters[question], crowds_parameters, models, measures, dgps, repeats=repeats))
-
-
