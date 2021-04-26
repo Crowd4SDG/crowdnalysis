@@ -1,10 +1,11 @@
 from typing import Tuple, Any, List, Union
 
-import pandas as pd
 import numpy as np
-from .problems import JSONDataClass, DiscreteConsensusProblem
-import dataclasses
-from dataclasses import dataclass
+import pandas as pd
+
+from .problems import DiscreteConsensusProblem
+
+
 #
 # class AbstractCondition:
 #     def filter(self):
@@ -43,7 +44,6 @@ class Data:
         self.annotator_ids = None
         self.annotator_index_from_id = None
         self.n_annotators = None
-        self.conditions = None  # type: List[Tuple[str, Union[Any, List[Any]]]]
         self.question_valid_rows = {}
 
     @classmethod
@@ -71,13 +71,13 @@ class Data:
         np_task_ids = df[task_id_col_name].to_numpy()
         if task_ids is None:
             task_ids = np.unique(np_task_ids)
-        #t = np.unique(np_task_ids)
-        #print(t==task_ids)
+        # t = np.unique(np_task_ids)
+        # print(t==task_ids)
         d.set_task_ids(task_ids)
         inverse = np.vectorize(d.task_index_from_id.get)(np_task_ids)
         df[cls.COL_TASK_INDEX] = inverse
 
-        #print(df[annotator_id_col_name].to_numpy())
+        # print(df[annotator_id_col_name].to_numpy())
         annotator_ids, inverse = np.unique(df[annotator_id_col_name].to_numpy(), return_inverse=True)
         d.set_annotator_ids(annotator_ids)
         df["annotator_index"] = inverse
@@ -91,11 +91,13 @@ class Data:
         """Creates a query for use in DataFrame.query()
 
         Examples:
-            >>> _make_query([('info_0', 5), ('info_2', ['Yes', 'Not answered'])])
+            >>> Data._make_query([('info_0', 5), ('info_2', ['Yes', 'Not answered'])])
             "`info_0`==5 & `info_2` in ['Yes', 'Not answered']"
         """
+
         def esc_str(v):
             return v if not isinstance(v, str) else "'{}'".format(v)
+
         return " & ".join("`{}`{}{}".format(q, "==" if not isinstance(a, list) else " in ", str(esc_str(a)))
                           for q, a in conditions)
 
@@ -126,7 +128,9 @@ class Data:
             return self.df.index.tolist()
 
     @classmethod
-    def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=[]):
+    def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=None):
+        if other_columns is None:
+            other_columns = []
         df = df.copy()
         columns_to_retain = ["task_id", "user_id"] + questions + other_columns
         df = preprocess(df)
@@ -134,21 +138,26 @@ class Data:
         return df
 
     @classmethod
-    def _from_single_file(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
-                          other_columns=[], delimiter=","):
+    def _from_single_file(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None,
+                          categories=None,
+                          other_columns=None, delimiter=","):
         """
         Create a Data object from a file.
         """
+        if other_columns is None:
+            other_columns = []
         df = pd.read_csv(file_name, delimiter=delimiter)
         # print("_from_single_file -> df columns before preprocessing: ", df.columns)
         df = cls._preprocess(df, questions, preprocess, other_columns)
         # print("_from_single_file -> df columns AFTER preprocessing: ", df.columns)
 
-        return cls.from_df(df, data_src=data_src, annotator_id_col_name="user_id", questions=questions, task_ids=task_ids, categories=categories)
+        return cls.from_df(df, data_src=data_src, annotator_id_col_name="user_id", questions=questions,
+                           task_ids=task_ids, categories=categories)
 
     @classmethod
     def from_pybossa(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
-                     task_info_file=None, task_file=None, field_task_key="info_media_0", other_columns=[], delimiter=","):
+                     task_info_file=None, task_file=None, field_task_key="info_media_0", other_columns=None,
+                     delimiter=","):
         """ 
         Create a Data object from a Pybossa file.
         """
@@ -162,6 +171,8 @@ class Data:
             # print("get_tasks {} {} ({}) -> \n{}".format("PyBossa", task_file, len(t_df.index), t_df))
             return t_df
 
+        if other_columns is None:
+            other_columns = []
         df = pd.read_csv(file_name, delimiter=delimiter)
         if task_info_file is not None:
             t_df = get_tasks(task_file, task_info_file, "task_id", field_task_key)
@@ -170,42 +181,51 @@ class Data:
         df = cls._preprocess(df, questions, preprocess, other_columns=other_columns)
         #  print("from_pybossa -> df columns AFTER preprocessing: ", df.columns)
         # print(df)
-        return cls.from_df(df, data_src=data_src, annotator_id_col_name="user_id", questions=questions, task_ids=task_ids, categories=categories)
+        return cls.from_df(df, data_src=data_src, annotator_id_col_name="user_id", questions=questions,
+                           task_ids=task_ids, categories=categories)
 
     @classmethod
-    def from_mturk(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None, other_columns=[], delimiter=","):
+    def from_mturk(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
+                   other_columns=None, delimiter=","):
+        if other_columns is None:
+            other_columns = []
         """Create a Data object from an Amazon MTurk file."""
-        return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, categories, other_columns=other_columns, delimiter=delimiter)
+        return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, categories,
+                                     other_columns=other_columns, delimiter=delimiter)
 
     @classmethod
-    def from_aidr(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, other_columns=[], delimiter=","):
+    def from_aidr(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, other_columns=None,
+                  delimiter=","):
         """Create a Data object from an AIDR file."""
         # Note: Does NOT send 'categories' arg
-        return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, other_columns=other_columns, delimiter=delimiter)
+        if other_columns is None:
+            other_columns = []
+        return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, other_columns=other_columns,
+                                     delimiter=delimiter)
 
     def set_questions(self, questions):
         self.questions = questions
 
     def set_task_ids(self, task_ids):
         self.task_ids = task_ids
-        self.task_index_from_id = {id: i for i, id in enumerate(task_ids)}
+        self.task_index_from_id = {idx: i for i, idx in enumerate(task_ids)}
         self.n_tasks = len(task_ids)
 
     def set_annotator_ids(self, annotator_ids):
         self.annotator_ids = annotator_ids
-        self.annotator_index_from_id = {id: i for i, id in enumerate(annotator_ids)}
+        self.annotator_index_from_id = {idx: i for i, idx in enumerate(annotator_ids)}
         self.n_annotators = len(annotator_ids)
 
     def set_df(self, df, categories=None):
         self.df = df
         for q in self.questions:
             if categories is None:
-                cat_vals = self.df[q].unique()
-                t = pd.api.types.CategoricalDtype(cat_vals)
+                cat_values = self.df[q].unique()
+                t = pd.api.types.CategoricalDtype(cat_values)
                 self.df[q] = self.df[q].astype(t)
             else:
                 self.df[q] = self.df[q].astype(categories[q])
-        question_indexes = [x+"_index" for x in self.questions]
+        question_indexes = [x + "_index" for x in self.questions]
         self.df[question_indexes] = self.df[self.questions].apply(lambda x: x.cat.codes)
 
     def n_labels(self, question):
@@ -223,18 +243,18 @@ class Data:
         ix = self.valid_rows(question)
         return self.df.iloc[ix][question + "_index"].to_numpy()
 
-    #def get_question_matrix(self, question):
+    # def get_question_matrix(self, question):
     #    df = self.df[[self.COL_TASK_INDEX, self.COL_WORKER_INDEX, question+"_index"]]
-        #print(df[question].cat.codes)
-        #df[question] = df[question].cat.codes
+    # print(df[question].cat.codes)
+    # df[question] = df[question].cat.codes
     #    return df.to_numpy()
 
     def get_categories(self):
         categories = {}
         for q in self.questions:
-            #print(self.df[q].cat)
-            #print(type(self.df[q].cat))
-            #print(self.df[q].dtype)
+            # print(self.df[q].cat)
+            # print(type(self.df[q].cat))
+            # print(self.df[q].dtype)
             categories[q] = self.df[q].dtype
         return categories
 
@@ -249,13 +269,15 @@ class Data:
         Returns:
             np.ndarray: `field` values corresponding to and in the order of the given `task_indices`.
         """
-        df_vals = self.df[self.df.task_index.isin(task_indices)][[self.COL_TASK_INDEX, field]]  # .isin() loses the order
+        df_values = self.df[self.df.task_index.isin(task_indices)][
+            [self.COL_TASK_INDEX, field]]  # .isin() loses the order
         df_ind = pd.DataFrame(task_indices, columns=[self.COL_TASK_INDEX])
-        df_vals = df_ind.merge(df_vals, how="left", left_on=self.COL_TASK_INDEX, right_on=self.COL_TASK_INDEX)  # Preserve the order
-        df_vals = df_vals[field]
+        df_values = df_ind.merge(df_values, how="left", left_on=self.COL_TASK_INDEX,
+                                 right_on=self.COL_TASK_INDEX)  # Preserve the order
+        df_values = df_values[field]
         if unique:
-            df_vals = df_vals.drop_duplicates()
-        return df_vals.to_numpy()
+            df_values = df_values.drop_duplicates()
+        return df_values.to_numpy()
 
     def get_dcp(self, question):
         return DiscreteConsensusProblem(n_tasks=self.n_tasks,
