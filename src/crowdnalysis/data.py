@@ -115,7 +115,7 @@ class Data:
         Args:
             question: Column name for the asked question in the `Data.df` dataframe
             conditions: A valid string to be used in `pandas.DataFrame.query()` that sets the dependency conditions for
-                the `question`. A question is asked to a worker only if the conditions are satisfied.
+                the `question`.
 
         Examples:
             set_condition("info_3", "`info_0`==5 & `info_1`=='Yes' & `info_2` in ['Yes', True]")
@@ -124,7 +124,7 @@ class Data:
         if conditions:  # silently ignore empty conditions
             self.question_valid_rows[question] = self.df.query(conditions).index
 
-    def valid_rows(self, question: str) -> List:
+    def valid_rows(self, question: str) -> pd.Index:
         """Return the indices of the valid rows for the `question`"""
         if question in self.question_valid_rows:
             return self.question_valid_rows[question]
@@ -132,8 +132,9 @@ class Data:
             return self.df.index
 
     def set_question_classes(self, question: str, classes: Optional[List[str]] = None):
+        """Specify the `classes` for a `question` which may be different than the label options."""
         if question in self.df.columns:
-            if classes is None:
+            if classes is None and question in self.question_classes:
                 del self.question_classes[question]
             else:
                 cat = self.df[question].dtype
