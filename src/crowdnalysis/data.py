@@ -292,10 +292,9 @@ class Data:
         return df_values.to_numpy()
 
     def get_dcp(self, question):
+        classes = None
         if question in self.question_classes:
             classes = self.question_classes[question]
-        else:
-            classes = list(range(self.n_labels(question)))
         return DiscreteConsensusProblem(n_tasks=self.n_tasks,
                                         n_workers=self.n_annotators,
                                         t_A=self.get_tasks(question),
