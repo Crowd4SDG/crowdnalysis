@@ -1,11 +1,10 @@
 """Module for analysing crowd-sourced data"""
 
-from typing import Dict, List
+from typing import List
 
-import numpy as np
 import pandas as pd
 
-from . import consensus, data
+from .import data
 from .consensus import GenerativeAbstractConsensus
 
 

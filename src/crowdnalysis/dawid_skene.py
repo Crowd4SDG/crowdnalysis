@@ -81,9 +81,9 @@ class DawidSkene(GenerativeAbstractConsensus):
     def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None):
         if parameters is None:
             parameters = self.Parameters()
-        n_real_labels = len(parameters.tau)  # number of real labels
+        n_classes = len(parameters.tau)  # number of real labels
         # Sample the real labels
-        return dgp.n_tasks, np.random.choice(n_real_labels, size=dgp.n_tasks, p=parameters.tau)
+        return dgp.n_tasks, np.random.choice(n_classes, size=dgp.n_tasks, p=parameters.tau)
 
     def sample_workers(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None) \
             -> Tuple[int, Optional[np.ndarray]]:

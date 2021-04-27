@@ -1,4 +1,4 @@
-from typing import Any, List, Union, Tuple
+from typing import Any, List, Optional, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -21,8 +21,8 @@ from .problems import DiscreteConsensusProblem
 class Data:
     """
     This is the main class for storing answers
-    - by a set of annotators, 
-    - to a set of tasks, 
+    - by a set of annotators,
+    - to a set of tasks,
     - each task with the very same questions.
     """
 
@@ -31,7 +31,7 @@ class Data:
 
     def __init__(self):
         """
-        The Data object must not be initialized by constructor. 
+        The Data object must not be initialized by constructor.
         Instead, use the from methods
         """
         # Make instance attributes' definitions explicit
@@ -45,14 +45,15 @@ class Data:
         self.annotator_index_from_id = None
         self.n_annotators = None
         self.question_valid_rows = {}
+        self.question_classes = {}
 
     @classmethod
     def from_df(cls, df, data_src=None, task_id_col_name="task_id", annotator_id_col_name="annotator_id",
                 questions=None, task_ids=None, categories=None):
-        """ 
+        """
         Create a Data object from dataframe df.
-        The dataframe contains one row for each annotation, 
-        each row has a task_id, an annotator id and the answers to a set of 
+        The dataframe contains one row for each annotation,
+        each row has a task_id, an annotator id and the answers to a set of
         questions, each answer in one column
         """
         d = Data()
@@ -130,6 +131,14 @@ class Data:
         else:
             return self.df.index
 
+    def set_question_classes(self, question: str, classes: Optional[List[str]] = None):
+        if question in self.df.columns:
+            if classes is None:
+                del self.question_classes[question]
+            else:
+                cat = self.df[question].dtype
+                self.question_classes[question] = [cat.get_loc(x) for x in classes]
+
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=None):
         if other_columns is None:
@@ -161,7 +170,7 @@ class Data:
     def from_pybossa(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
                      task_info_file=None, task_file=None, field_task_key="info_media_0", other_columns=None,
                      delimiter=","):
-        """ 
+        """
         Create a Data object from a Pybossa file.
         """
 
@@ -283,9 +292,13 @@ class Data:
         return df_values.to_numpy()
 
     def get_dcp(self, question):
+        classes = None
+        if question in self.question_classes:
+            classes = self.question_classes[question]
         return DiscreteConsensusProblem(n_tasks=self.n_tasks,
                                         n_workers=self.n_annotators,
                                         t_A=self.get_tasks(question),
                                         w_A=self.get_workers(question),
                                         f_A=self.get_annotations(question),
-                                        n_labels=self.n_labels(question))
+                                        n_labels=self.n_labels(question),
+                                        classes=classes)

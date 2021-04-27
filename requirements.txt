@@ -11,3 +11,4 @@ dominate
 cmdstanpy
 pytest
 numpyencoder
+flake8

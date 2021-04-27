@@ -1,6 +1,6 @@
-from .. import log
-from ..measures import Accuracy, LSAccuracy
 import numpy as np
+
+from ..measures import Accuracy, LSAccuracy
 
 
 def test_accuracies_binary():

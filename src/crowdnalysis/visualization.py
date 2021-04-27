@@ -77,7 +77,7 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
                 n_warn = 0
                 with body.add(tags.div(cls='labels')):
                     for ix, tpl in enumerate(task_picture_links):
-                        l = tags.div(cls="task-image")
+                        ti = tags.div(cls="task-image")
                         task_index = task_indices[ix]
                         probabilities = [(p, li) for li, p in enumerate(consensus[task_index, :])]
                         probabilities.sort(key=lambda x: x[0], reverse=True)
@@ -89,7 +89,7 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
                             kwargs = {"cls": "warn"}
                         else:
                             kwargs = {}
-                        l += tags.a(tags.img(src=tpl, title=img_title, **kwargs), href=tpl)
+                        ti += tags.a(tags.img(src=tpl, title=img_title, **kwargs), href=tpl)
                     if n_warn > 0:
                         label_header = doc.body.getElementById(label_id)
                         label_header.add_raw_string(" (<span style='color:{c}'>{n}</span> warning{s})".format(
@@ -120,6 +120,7 @@ def csv_description(consensus: np.ndarray, data: Data, question: str, picture_fi
     Returns:
         If output_file is None, returns the resulting csv format as a string. Otherwise, returns None.
     """
+
     def diff_best_two(x):
         probabilities = list(x)
         probabilities.sort(reverse=True)
@@ -261,7 +262,7 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, c
                 n_outline_good = 0
                 with body.add(tags.div(cls='labels')):
                     for ix, tpl in enumerate(task_picture_links):
-                        l = tags.div(cls="task-image")
+                        ti = tags.div(cls="task-image")
                         task_index = task_indices[ix]
                         probabilities = [(p, li) for li, p in enumerate(consensus[task_index, :])]
                         probabilities.sort(key=lambda x: x[0], reverse=True)
@@ -281,7 +282,7 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, c
                             else:
                                 n_outline_good += 1
                             kwargs["cls"] = (kwargs.get("cls", "") + " outline").lstrip()
-                        l += tags.a(tags.img(src=tpl, title=img_title, **kwargs), href=tpl)
+                        ti += tags.a(tags.img(src=tpl, title=img_title, **kwargs), href=tpl)
                     n_outline = n_outline_warn + n_outline_good
                     if n_warn + n_outline > 0:
                         label_header = doc.body.getElementById(label_id)

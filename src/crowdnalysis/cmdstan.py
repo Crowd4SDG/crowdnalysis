@@ -58,6 +58,7 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
 
     def __init__(self, model_name):
         self.model_name = model_name
+        # self.hidden_variables = []
 
     def map_data_to_model(self, dcp: DiscreteConsensusProblem, **kwargs):
         d = self.map_data_to_data(dcp, **kwargs)
@@ -84,8 +85,8 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
     def map_data_to_args(self, **kwargs):
         raise NotImplementedError
 
-    def MLE_parameters(self, results: CmdStanMLE):
-        return {var_name: results.optimized_params_dict[var_name] for var_name in self.hidden_variables}
+    # def MLE_parameters(self, results: CmdStanMLE):
+    #     return {var_name: results.optimized_params_dict[var_name] for var_name in self.hidden_variables}
 
     def fit_and_compute_consensus_model(self):
         return CmdStanModel(stan_file=resource_filename(self.model_name + ".fit_and_consensus.stan"))
@@ -100,8 +101,8 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
         for f in stan_data.keys():
             log.info("Type of %s is %s", f, type(stan_data[f]))
         log.info(init_data)
-        #stan_data = {}
-        #init_data = {}
+        # stan_data = {}
+        # init_data = {}
         results = model.optimize(data=stan_data, inits=init_data, **kwargs)
         var_dict = _get_var_dict(results)
         keys = [x.name for x in dataclasses.fields(self.Parameters)]
@@ -210,7 +211,8 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
             -> Tuple[int, Optional[np.ndarray]]:
         return 1, None
 
-    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters, parameters: Optional[Parameters]=None)\
+    def sample_annotations(self, tasks, workers, dgp: DataGenerationParameters,
+                           parameters: Optional[Parameters] = None)\
             -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[int]]:
         model = self.sample_annotations_model()
         sample = model.sample(data={'w': 1,
@@ -285,7 +287,6 @@ class StanDSOptimizeConsensus(StanMultinomialOptimizeConsensus):
         pi_param_ = np.broadcast_to(pi_prior_ / np.sum(pi_prior_[0]), (w, k, k))
         return {'tau': self.tau_prior(ann, k, alpha=1.),
                 'pi': pi_param_}
-
 
     # TODO: Implement sampling from this model
     sample_tasks = 0
