@@ -1,4 +1,4 @@
-from typing import Tuple, Any, List, Union
+from typing import Any, List, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -87,7 +87,7 @@ class Data:
         return d
 
     @staticmethod
-    def make_and_condition(conditions: List[Tuple[str, Union[Any, List[Any]]]]):
+    def make_and_condition(conditions: List[Tuple[str, Union[Any, List[Any]]]]) -> str:
         """Utility function that creates a conjunctive clause from `conditions` to be used in `Data.set_condition()`.
 
         Args:
@@ -114,7 +114,7 @@ class Data:
         Args:
             question: Column name for the asked question in the `Data.df` dataframe
             conditions: A valid string to be used in `pandas.DataFrame.query()` that sets the dependency conditions for
-                the `question`.
+                the `question`. A question is asked to a worker only if the conditions are satisfied.
 
         Examples:
             set_condition("info_3", "`info_0`==5 & `info_1`=='Yes' & `info_2` in ['Yes', True]")
