@@ -192,8 +192,8 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
     def map_data_to_args(self, **kwargs):
         # args = {"iter": 2000}
         return {'algorithm': 'LBFGS',
-                'init_alpha': 0.01,
-                'output_dir': "."}
+                'init_alpha': 0.01}
+                # 'output_dir': "."}
 
     def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None) \
             -> Tuple[int, Optional[np.ndarray]]:
