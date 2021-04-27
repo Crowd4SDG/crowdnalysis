@@ -115,14 +115,17 @@ class Data:
         Args:
             question: Column name for the asked question in the `Data.df` dataframe
             conditions: A valid string to be used in `pandas.DataFrame.query()` that sets the dependency conditions for
-                the `question`.
+                the `question`. Pass "" or None to remove the conditions for the question.
 
         Examples:
             set_condition("info_3", "`info_0`==5 & `info_1`=='Yes' & `info_2` in ['Yes', True]")
 
         """
-        if conditions:  # silently ignore empty conditions
+        if conditions:
             self.question_valid_rows[question] = self.df.query(conditions).index
+        elif question in self.question_valid_rows:
+            del self.question_valid_rows[question]
+        # else:  # silently ignore empty conditions
 
     def valid_rows(self, question: str) -> pd.Index:
         """Return the indices of the valid rows for the `question`"""
