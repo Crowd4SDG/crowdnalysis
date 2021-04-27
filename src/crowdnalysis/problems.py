@@ -1,10 +1,11 @@
-import json
-import numpy as np
 import dataclasses
+import json
 from dataclasses import dataclass
-from typing import List, Optional, Dict
-from numpyencoder import NumpyEncoder
 from itertools import product
+from typing import List, Optional, Dict
+
+import numpy as np
+from numpyencoder import NumpyEncoder
 
 
 @dataclass
@@ -46,11 +47,6 @@ class ConsensusProblem(JSONDataClass):
     f_A: np.ndarray = np.array([])
 
     def __post_init__(self):
-        """
-
-        Raises:
-            ValueError: If # of tasks or of workers is not determinable
-        """
         if isinstance(self.f_T, list):
             self.f_T = np.array(self.f_T)
         if isinstance(self.f_W, list):
@@ -94,9 +90,8 @@ class DiscreteConsensusProblem(ConsensusProblem):
             self.classes = list(range(self.n_labels))
 
     def compute_n(self):
+        """Compute the `n` matrix in Dawid-Skene model"""
         # TODO: This should be optimized
-        # Compute the n matrix
-
         n = np.zeros((self.n_workers, self.n_tasks, self.n_labels))
         for i in range(self.n_annotations):
             n[self.w_A[i], self.t_A[i], self.f_A[i, 0]] += 1
