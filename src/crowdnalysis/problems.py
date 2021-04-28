@@ -7,6 +7,8 @@ from typing import List, Optional, Dict
 import numpy as np
 from numpyencoder import NumpyEncoder
 
+from . import log
+
 
 @dataclass
 class JSONDataClass:
@@ -89,10 +91,23 @@ class DiscreteConsensusProblem(ConsensusProblem):
             # By default every label is a real class
             self.classes = list(range(self.n_labels))
 
-    def compute_n(self):
-        """Compute the `n` matrix in Dawid-Skene model"""
+    def compute_n(self, ignore_zero_annots: bool = True) -> np.ndarray:
+        """Compute the `n` multi-dimensional array in Dawid-Skene (1979).
+
+        Args:
+            ignore_zero_annots: Ignores tasks with zero # of annotations.
+
+        Returns:
+
+        """
         # TODO: This should be optimized
         n = np.zeros((self.n_workers, self.n_tasks, self.n_labels))
         for i in range(self.n_annotations):
             n[self.w_A[i], self.t_A[i], self.f_A[i, 0]] += 1
+        if ignore_zero_annots:
+            n_sum_w_A = n.sum(axis=0)
+            zero_annots = np.all(n_sum_w_A == 0, axis=1)
+            if np.any(zero_annots):
+                n = n[:, ~zero_annots, :]
+                log.warn("{} tasks with zero annotations are eliminated in 'n'.".format(np.sum(zero_annots)))
         return n
