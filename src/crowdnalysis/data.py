@@ -141,7 +141,7 @@ class Data:
                 del self.question_classes[question]
             else:
                 cat = self.df[question].dtype
-                self.question_classes[question] = [cat.get_loc(x) for x in classes]
+                self.question_classes[question] = [cat.categories.get_loc(x) for x in classes]
 
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=None):
@@ -285,11 +285,9 @@ class Data:
         Returns:
             np.ndarray: `field` values corresponding to and in the order of the given `task_indices`.
         """
-        df_values = self.df[self.df.task_index.isin(task_indices)][
-            [self.COL_TASK_INDEX, field]]  # .isin() loses the order
+        df_values = self.df[self.df.task_index.isin(task_indices)][[self.COL_TASK_INDEX, field]]  # .isin() loses the order
         df_ind = pd.DataFrame(task_indices, columns=[self.COL_TASK_INDEX])
-        df_values = df_ind.merge(df_values, how="left", left_on=self.COL_TASK_INDEX,
-                                 right_on=self.COL_TASK_INDEX)  # Preserve the order
+        df_values = df_ind.merge(df_values, how="left", left_on=self.COL_TASK_INDEX, right_on=self.COL_TASK_INDEX)  # Preserve the order
         df_values = df_values[field]
         if unique:
             df_values = df_values.drop_duplicates()
