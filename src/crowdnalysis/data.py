@@ -45,7 +45,7 @@ class Data:
         self.annotator_index_from_id = None
         self.n_annotators = None
         self.question_valid_rows = {}
-        self.question_classes = {}
+        self._question_classes = {}
 
     @classmethod
     def from_df(cls, df, data_src=None, task_id_col_name="task_id", annotator_id_col_name="annotator_id",
@@ -128,7 +128,13 @@ class Data:
         # else:  # silently ignore empty conditions
 
     def valid_rows(self, question: str) -> pd.Index:
-        """Return the indices of the valid rows for the `question`"""
+        """Return the indices of the valid rows for the `question`.
+
+        Raises:
+            ValueError: If the `question` does not exist in data.
+        """
+        if question not in self.df.columns:
+            raise ValueError("{} is not a valid column in data.")
         if question in self.question_valid_rows:
             return self.question_valid_rows[question]
         else:
@@ -137,11 +143,22 @@ class Data:
     def set_question_classes(self, question: str, classes: Optional[List[str]] = None):
         """Specify the `classes` for a `question` which may be different than the label options."""
         if question in self.df.columns:
-            if classes is None and question in self.question_classes:
-                del self.question_classes[question]
+            if classes is None and question in self._question_classes:
+                del self._question_classes[question]
             else:
                 cat = self.df[question].dtype
-                self.question_classes[question] = [cat.categories.get_loc(x) for x in classes]
+                self._question_classes[question] = [cat.categories.get_loc(x) for x in classes]
+
+    def get_question_classes(self, question: str) -> List:
+        """Return the `classes` for the `question`.
+
+        Label indices are returned if `classes` are not explicitly set.
+        """
+        if question in self.df.columns:
+            if question in self._question_classes:
+                return self._question_classes[question]
+            else:
+                return list(range(len(self.df[question].cat.categories)))
 
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=None):
@@ -294,13 +311,10 @@ class Data:
         return df_values.to_numpy()
 
     def get_dcp(self, question):
-        classes = None
-        if question in self.question_classes:
-            classes = self.question_classes[question]
         return DiscreteConsensusProblem(n_tasks=self.n_tasks,
                                         n_workers=self.n_annotators,
                                         t_A=self.get_tasks(question),
                                         w_A=self.get_workers(question),
                                         f_A=self.get_annotations(question),
                                         n_labels=self.n_labels(question),
-                                        classes=classes)
+                                        classes=self.get_question_classes(question))
