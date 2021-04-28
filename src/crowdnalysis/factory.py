@@ -16,7 +16,7 @@ class Factory:
             name (str):
 
         Returns:
-            Type[consensus.AbstractConsensus]: The class not its instance.
+            consensus.AbstractConsensus: The class instance created by the `kwargs`.
 
         Raises:
             KeyError: If the algorithm is not registered.
