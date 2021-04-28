@@ -21,7 +21,8 @@ def get_n_and_ranges(d: Data, question: str, ignore_le1_annots: bool = True) -> 
     if ignore_le1_annots:
         le1_annots = n.sum(axis=1) <= 1
         if np.any(le1_annots):
-            log.warn("{} tasks with ≤ 1 annotations are ignored in agreement calculation.".format(np.sum(le1_annots)))
+            log.warn("{} tasks with ≤ 1 annotations out of {} tasks are ignored in agreement calculation.".format(
+                np.sum(le1_annots), n.shape[0]))
             # print("n[le1_annots, :]:\n", n[le1_annots, :])
             n = n[~le1_annots, :]
     return n, dcp.n_tasks
