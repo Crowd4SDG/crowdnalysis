@@ -4,15 +4,26 @@ import numpy as np
 from statsmodels.stats import inter_rater
 
 from .data import Data
+from . import log
 
 
-def get_n_and_ranges(d: Data, question: str) -> Tuple[np.ndarray, int]:
+def get_n_and_ranges(d: Data, question: str, ignore_le1_annots: bool = True) -> Tuple[np.ndarray, int]:
     """Return 2D (n_tasks, n_labels) annotation count matrix `n`, and n_tasks, n_labels, n_annotators values
 
     where n_tasks: # of tasks, n_labels: # of labels, n_annotators: # of annotators
+
+    Args:
+        ignore_le1_annots: Ignores tasks with # of annotations ≤ 1. This makes sense since to speak of an agreement,
+            there have to be > 1 annotations for a task.
     """
     dcp = d.get_dcp(question)
-    n = dcp.compute_n().sum(axis=0)
+    n = dcp.compute_n(ignore_zero_annots=False).sum(axis=0)
+    if ignore_le1_annots:
+        le1_annots = n.sum(axis=1) <= 1
+        if np.any(le1_annots):
+            log.warn("{} tasks with ≤ 1 annotations are ignored in agreement calculation.".format(np.sum(le1_annots)))
+            # print("n[le1_annots, :]:\n", n[le1_annots, :])
+            n = n[~le1_annots, :]
     return n, dcp.n_tasks
 
 
@@ -23,17 +34,17 @@ def fleiss_kappa(d: Data, question: str) -> float:
     return kappa
 
 
-def fleiss_gen_kappa(d: Data, question: str, w: np.ndarray = None) -> float:
-    """Return Fleiss' generalized kappa value for the annotation data
+def gen_fleiss_kappa(d: Data, question: str, w: np.ndarray = None) -> float:
+    """Return generalized Fleiss' kappa value for the annotation data
 
     ref: Gwet KL. (2014) Handbook of Inter-Rater Reliability.
     """
     n, *_ = get_n_and_ranges(d, question)
-    kappa = _fleiss_gen_kappa(n, w)
+    kappa = _gen_fleiss_kappa(n, w)
     return kappa
 
 
-def _fleiss_gen_kappa(r, w=None):
+def _gen_fleiss_kappa(r, w=None):
     # r[i][l] -> number of raters that assigned item i to category l
     n, q = r.shape
     if w is None:
