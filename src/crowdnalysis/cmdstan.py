@@ -1,3 +1,4 @@
+import ast
 import dataclasses
 from . import log
 from importlib.resources import path as irpath
@@ -95,6 +96,9 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
         """Fits the model parameters and computes the consensus.
         returns consensus, model parameters"""
 
+        n = dcp.compute_n()
+        n_sum = np.sum(np.sum(n, axis=0), axis=0)
+        print("n:", n_sum/np.sum(n_sum))
         stan_data, init_data, kwargs = self.map_data_to_model(dcp)
         model = self.fit_and_compute_consensus_model()
         log.info(stan_data.keys())
@@ -134,7 +138,9 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
     def compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs):
         # print(kwargs["data"])
         stan_data, init_data, kwargs_opt = self.map_data_to_model(dcp)
-        stan_data.update(kwargs["data"])
+        # print("stan_data:", stan_data)
+        # print("kwargs['data']:", ast.literal_eval(kwargs["data"]))
+        stan_data.update(ast.literal_eval(kwargs["data"]))
 
         model = self.compute_consensus_model()
         results = model.optimize(data=stan_data, inits=init_data, **kwargs_opt)
@@ -179,7 +185,7 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         return np.ones((k, k)) * alpha + np.identity(k) * beta
 
     def map_data_to_prior(self, k, ann, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, 5.)
+        tau_prior_ = self.tau_prior(ann, k, alpha=5.)
         pi_prior_ = self.pi_prior(k)
 
         return {"tau_prior": tau_prior_,
@@ -247,7 +253,7 @@ class StanMultinomialEtaOptimizeConsensus(StanMultinomialOptimizeConsensus):
         AbstractStanOptimizeConsensus.__init__(self, "MultinomialEta")
 
     def map_data_to_prior(self, k, ann, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, 5.)
+        tau_prior_ = self.tau_prior(ann, k, alpha=5.)
         min_pi_prior_ = np.zeros((k, k - 1))
         max_pi_prior_ = np.ones((k, k - 1)) * 5
         return {'tau_prior': tau_prior_,
