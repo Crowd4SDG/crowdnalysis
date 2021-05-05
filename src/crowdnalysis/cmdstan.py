@@ -173,34 +173,39 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "Multinomial")
 
-    def tau_prior(self, ann, k, alpha=1.):
+    def tau_estimate(self, ann, k):
         unique, counts = np.unique(ann, return_counts=True)
         tp = np.ones(k)
         for i, x in enumerate(unique):
             tp[x - 1] += counts[i]
         tp /= np.sum(tp)
-        return alpha * tp
+        return tp
 
-    def pi_prior(self, k, alpha=1, beta=10):
+    def tau_prior(self, ann, k, alpha=5., beta=5.):
+        return alpha * self.tau_estimate(ann, k) + beta
+
+    def pi_prior(self, k, alpha=1., beta=10):
         return np.ones((k, k)) * alpha + np.identity(k) * beta
 
     def map_data_to_prior(self, k, ann, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, alpha=5.)
-        pi_prior_ = self.pi_prior(k)
+        tau_prior_ = self.tau_prior(ann, k, alpha=5.)+5.
+        print("tp:", tau_prior_)
+        pi_prior_ = self.pi_prior(k, alpha=5, beta=5)
 
         return {"tau_prior": tau_prior_,
                 "pi_prior": pi_prior_}
 
     def map_data_to_inits(self, ann, k, **kwargs):
         pi_prior_ = self.pi_prior(k)
-        return {'tau': self.tau_prior(ann, k, alpha=1.),
+        return {'tau': self.tau_estimate(ann, k),
                 'pi': (pi_prior_ / np.sum(pi_prior_[0]))}
 
     def map_data_to_args(self, **kwargs):
         # args = {"iter": 2000}
         return {'algorithm': 'LBFGS',
-                'init_alpha': 0.01}
-                # 'output_dir': "."}
+                #'init_alpha': 0.001
+                 'output_dir': "."
+                }
 
     def sample_tasks(self, dgp: DataGenerationParameters, parameters: Optional[Parameters] = None) \
             -> Tuple[int, Optional[np.ndarray]]:
