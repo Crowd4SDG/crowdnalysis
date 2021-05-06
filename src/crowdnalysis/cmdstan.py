@@ -98,7 +98,7 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
 
         n = dcp.compute_n()
         n_sum = np.sum(np.sum(n, axis=0), axis=0)
-        print("n:", n_sum/np.sum(n_sum))
+        # print("n:", n_sum/np.sum(n_sum))
         stan_data, init_data, kwargs = self.map_data_to_model(dcp)
         model = self.fit_and_compute_consensus_model()
         log.info(stan_data.keys())
@@ -189,7 +189,7 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
 
     def map_data_to_prior(self, k, ann, **kwargs):
         tau_prior_ = self.tau_prior(ann, k, alpha=5.)+5.
-        print("tp:", tau_prior_)
+        #print("tp:", tau_prior_)
         pi_prior_ = self.pi_prior(k, alpha=5, beta=5)
 
         return {"tau_prior": tau_prior_,

@@ -21,14 +21,6 @@ parameters {
 }
 
 transformed parameters {
-  print("tau:",tau);
-  print("pi:",pi);
-  // real min_log_tau;
-  // min_log_tau = min(log(tau));
-  // print("min log tau:",min_log_tau);
-  //if (min_log_tau < -10.) {
-  //  reject("rejected");
-  //}
   // log_p_t_C[_t][_k] is the log of the probability of the annotations of task _t assuming t_C=_k
   vector[k] log_p_t_C[t];
   vector[k] t_C[t]; //the true class distribution of each item
@@ -37,8 +29,8 @@ transformed parameters {
 
   // Compute the probabilities from the logs
 
-  //for(_t in 1:t)
-  //  t_C[_t] = softmax(log_p_t_C[_t]);
+  for(_t in 1:t)
+    t_C[_t] = softmax(log_p_t_C[_t]);
 
 }
 
@@ -60,9 +52,5 @@ model {
   {
      real lse = log_sum_exp(log_p_t_C[_t]);
      target += lse;
-     //if (lse < -20.) {
-     //   print("t=",t);
-     //   print("lse=",lse);
-     //}
   }
 }
