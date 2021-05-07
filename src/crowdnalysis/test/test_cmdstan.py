@@ -1,5 +1,5 @@
 import dataclasses
-from typing import List, Callable, Type
+from typing import List, Callable, Type, Tuple
 
 import pytest
 from dataclasses import dataclass
@@ -12,7 +12,7 @@ from ..cmdstan import AbstractStanOptimizeConsensus, StanMultinomialOptimizeCons
 from . import close, distance, TOLERANCE
 
 
-@dataclass()
+@dataclass
 class SampleForTest:
     problem: ConsensusProblem
     parameters: AbstractStanOptimizeConsensus.Parameters
@@ -39,14 +39,27 @@ def sample_non_finite_gradient() -> SampleForTest:
     return SampleForTest(problem, parameters)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sample_funcs() -> List[Callable]:
     return [easy_sample, sample_non_finite_gradient]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def samples(sample_funcs) -> List[SampleForTest]:
     return [sf() for sf in sample_funcs]
+
+
+@pytest.fixture(scope="module")
+def ref_consensus_and_params(request, samples) -> List[Tuple[np.ndarray,
+                                                             AbstractStanOptimizeConsensus.Parameters,
+                                                             ConsensusProblem]]:
+    model_cls = request.param
+    model = model_cls()
+    ref_consensus_and_params_ = []
+    for sample in samples:
+        consensus_ref, parameters_ref = model.fit_and_compute_consensus(sample.problem)
+        ref_consensus_and_params_.append((consensus_ref, parameters_ref, sample.problem))
+    return ref_consensus_and_params_
 
 
 def _test_fit_and_compute_consensus(model_cls: Type[AbstractStanOptimizeConsensus], sample: SampleForTest):
@@ -60,24 +73,22 @@ def _test_fit_and_compute_consensus(model_cls: Type[AbstractStanOptimizeConsensu
         assert close(dict_parameters_learned[p], dict_sample_parameters[p])
 
 
-def _test_fit(model_cls: Type[AbstractStanOptimizeConsensus], sample: SampleForTest):
+def _test_fit(model_cls: Type[AbstractStanOptimizeConsensus], consensus_ref: np.ndarray,
+              parameters_ref: AbstractStanOptimizeConsensus.Parameters, problem: ConsensusProblem):
     model = model_cls()
-    consensus_ref, parameters_ref = model.fit_and_compute_consensus(sample.problem)
-    model = model_cls()
-    parameters_learned = model.fit(sample.problem, consensus_ref)
+    parameters_learned = model.fit(problem, consensus_ref)
     dict_parameters_learned = dataclasses.asdict(parameters_learned)
     dict_parameters_ref = dataclasses.asdict(parameters_ref)
-    for p in dict_parameters_learned.keys():
+    for p in dict_parameters_ref.keys():
         log.debug("Distance between learned {p} and reference {p}: {d:f}".format(
             p=p, d=distance(dict_parameters_learned[p], dict_parameters_ref[p])))
         assert close(dict_parameters_learned[p], dict_parameters_ref[p])
 
 
-def _test_compute_consensus(model_cls: Type[AbstractStanOptimizeConsensus], sample: SampleForTest):
+def _test_compute_consensus(model_cls: Type[AbstractStanOptimizeConsensus], consensus_ref: np.ndarray,
+                            parameters_ref: AbstractStanOptimizeConsensus.Parameters, problem: ConsensusProblem):
     model = model_cls()
-    consensus_ref, parameters_ref = model.fit_and_compute_consensus(sample.problem)
-    model = model_cls()
-    consensus_calculated, _ = model.compute_consensus(sample.problem, data=parameters_ref.to_json())
+    consensus_calculated, _ = model.compute_consensus(problem, data=parameters_ref.to_json())
     assert np.allclose(consensus_calculated, consensus_ref, atol=TOLERANCE)
 
 
@@ -86,11 +97,13 @@ def test_multinomial_optimize_fit_and_compute_consensus(samples):
         _test_fit_and_compute_consensus(StanMultinomialOptimizeConsensus, sample=sample)
 
 
-def test_multinomial_optimize_fit(samples):
-    for sample in samples:
-        _test_fit(StanMultinomialOptimizeConsensus, sample=sample)
+@pytest.mark.parametrize("ref_consensus_and_params", [StanMultinomialOptimizeConsensus], indirect=True)
+def test_multinomial_optimize_fit(ref_consensus_and_params):
+    for consensus_ref, parameters_ref, problem in ref_consensus_and_params:
+        _test_fit(StanMultinomialOptimizeConsensus, consensus_ref, parameters_ref, problem)
 
 
-def test_multinomial_optimize_compute_consensus(samples):
-    for sample in samples:
-        _test_compute_consensus(StanMultinomialOptimizeConsensus, sample=sample)
+@pytest.mark.parametrize("ref_consensus_and_params", [StanMultinomialOptimizeConsensus], indirect=True)
+def test_multinomial_optimize_compute_consensus(ref_consensus_and_params):
+    for consensus_ref, parameters_ref, problem in ref_consensus_and_params:
+        _test_compute_consensus(StanMultinomialOptimizeConsensus, consensus_ref, parameters_ref, problem)
