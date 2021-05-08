@@ -60,18 +60,17 @@ def samples(sample_funcs) -> Dict[str, List[SampleForTest]]:
 
 
 @pytest.fixture(scope="module")
-def ref_consensus_and_params(models, samples) -> Dict[str, List[Tuple[np.ndarray,
-                                                                      AbstractStanOptimizeConsensus.Parameters,
-                                                                      ConsensusProblem]]]:
-    ref_consensus_and_params_ = {}
-    for model_name in models.keys():
-        model_cls = models[model_name]
+def ref_consensus_params_problem(models, samples) -> Dict[str, List[Tuple[np.ndarray,
+                                                                          AbstractStanOptimizeConsensus.Parameters,
+                                                                          ConsensusProblem]]]:
+    dict_ref = {}
+    for model_name, model_cls in models.items():
         model = model_cls()
-        ref_consensus_and_params_[model_name] = []
+        dict_ref[model_name] = []
         for sample in samples[model_name]:
             consensus_ref, parameters_ref = model.fit_and_compute_consensus(sample.problem)
-            ref_consensus_and_params_[model_name].append((consensus_ref, parameters_ref, sample.problem))
-    return ref_consensus_and_params_
+            dict_ref[model_name].append((consensus_ref, parameters_ref, sample.problem))
+    return dict_ref
 
 
 def _test_fit_and_compute_consensus(model_cls: Type[AbstractStanOptimizeConsensus], sample: SampleForTest):
@@ -109,11 +108,11 @@ def test_multinomial_optimize_fit_and_compute_consensus(samples):
         _test_fit_and_compute_consensus(StanMultinomialOptimizeConsensus, sample)
 
 
-def test_multinomial_optimize_fit(ref_consensus_and_params):
-    for consensus_ref, parameters_ref, problem in ref_consensus_and_params[StanMultinomialOptimizeConsensus.name]:
+def test_multinomial_optimize_fit(ref_consensus_params_problem):
+    for consensus_ref, parameters_ref, problem in ref_consensus_params_problem[StanMultinomialOptimizeConsensus.name]:
         _test_fit(StanMultinomialOptimizeConsensus, consensus_ref, parameters_ref, problem)
 
 
-def test_multinomial_optimize_compute_consensus(ref_consensus_and_params):
-    for consensus_ref, parameters_ref, problem in ref_consensus_and_params[StanMultinomialOptimizeConsensus.name]:
+def test_multinomial_optimize_compute_consensus(ref_consensus_params_problem):
+    for consensus_ref, parameters_ref, problem in ref_consensus_params_problem[StanMultinomialOptimizeConsensus.name]:
         _test_compute_consensus(StanMultinomialOptimizeConsensus, consensus_ref, parameters_ref, problem)
