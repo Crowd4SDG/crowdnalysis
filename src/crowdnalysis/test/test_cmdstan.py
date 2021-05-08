@@ -1,15 +1,14 @@
 import dataclasses
-from typing import List, Callable, Type, Tuple
-
 import pytest
 from dataclasses import dataclass
+from typing import Callable, Dict, List, Tuple, Type
 
 import numpy as np
 
+from . import close, distance, TOLERANCE
 from .. import log
 from ..problems import ConsensusProblem
 from ..cmdstan import AbstractStanOptimizeConsensus, StanMultinomialOptimizeConsensus
-from . import close, distance, TOLERANCE
 
 
 @dataclass
@@ -40,25 +39,38 @@ def sample_non_finite_gradient() -> SampleForTest:
 
 
 @pytest.fixture(scope="module")
-def sample_funcs() -> List[Callable]:
-    return [easy_sample, sample_non_finite_gradient]
+def models() -> Dict[str, Type[AbstractStanOptimizeConsensus]]:
+    # Model classes can be integrated into `sample_funcs` too. We keep it separate for simplicity's sake. OM, 20210508
+    dict_models = {StanMultinomialOptimizeConsensus.name: StanMultinomialOptimizeConsensus}
+    return dict_models
 
 
 @pytest.fixture(scope="module")
-def samples(sample_funcs) -> List[SampleForTest]:
-    return [sf() for sf in sample_funcs]
+def sample_funcs() -> Dict[str, List[Callable]]:
+    dict_funcs = {StanMultinomialOptimizeConsensus.name: [easy_sample, sample_non_finite_gradient]}
+    return dict_funcs
 
 
 @pytest.fixture(scope="module")
-def ref_consensus_and_params(request, samples) -> List[Tuple[np.ndarray,
-                                                             AbstractStanOptimizeConsensus.Parameters,
-                                                             ConsensusProblem]]:
-    model_cls = request.param
-    model = model_cls()
-    ref_consensus_and_params_ = []
-    for sample in samples:
-        consensus_ref, parameters_ref = model.fit_and_compute_consensus(sample.problem)
-        ref_consensus_and_params_.append((consensus_ref, parameters_ref, sample.problem))
+def samples(sample_funcs) -> Dict[str, List[SampleForTest]]:
+    dict_samples = {}
+    for model_name in sample_funcs.keys():
+        dict_samples[model_name] = [sf() for sf in sample_funcs[model_name]]
+    return dict_samples
+
+
+@pytest.fixture(scope="module")
+def ref_consensus_and_params(models, samples) -> Dict[str, List[Tuple[np.ndarray,
+                                                                      AbstractStanOptimizeConsensus.Parameters,
+                                                                      ConsensusProblem]]]:
+    ref_consensus_and_params_ = {}
+    for model_name in models.keys():
+        model_cls = models[model_name]
+        model = model_cls()
+        ref_consensus_and_params_[model_name] = []
+        for sample in samples[model_name]:
+            consensus_ref, parameters_ref = model.fit_and_compute_consensus(sample.problem)
+            ref_consensus_and_params_[model_name].append((consensus_ref, parameters_ref, sample.problem))
     return ref_consensus_and_params_
 
 
@@ -93,17 +105,15 @@ def _test_compute_consensus(model_cls: Type[AbstractStanOptimizeConsensus], cons
 
 
 def test_multinomial_optimize_fit_and_compute_consensus(samples):
-    for sample in samples:
-        _test_fit_and_compute_consensus(StanMultinomialOptimizeConsensus, sample=sample)
+    for sample in samples[StanMultinomialOptimizeConsensus.name]:
+        _test_fit_and_compute_consensus(StanMultinomialOptimizeConsensus, sample)
 
 
-@pytest.mark.parametrize("ref_consensus_and_params", [StanMultinomialOptimizeConsensus], indirect=True)
 def test_multinomial_optimize_fit(ref_consensus_and_params):
-    for consensus_ref, parameters_ref, problem in ref_consensus_and_params:
+    for consensus_ref, parameters_ref, problem in ref_consensus_and_params[StanMultinomialOptimizeConsensus.name]:
         _test_fit(StanMultinomialOptimizeConsensus, consensus_ref, parameters_ref, problem)
 
 
-@pytest.mark.parametrize("ref_consensus_and_params", [StanMultinomialOptimizeConsensus], indirect=True)
 def test_multinomial_optimize_compute_consensus(ref_consensus_and_params):
-    for consensus_ref, parameters_ref, problem in ref_consensus_and_params:
+    for consensus_ref, parameters_ref, problem in ref_consensus_and_params[StanMultinomialOptimizeConsensus.name]:
         _test_compute_consensus(StanMultinomialOptimizeConsensus, consensus_ref, parameters_ref, problem)
