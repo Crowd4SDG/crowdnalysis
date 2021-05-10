@@ -200,6 +200,7 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
     def map_data_to_args(self, **kwargs):
         # args = {"iter": 2000}
         return {'algorithm': 'LBFGS',
+                'sig_figs': 10,
                 #'init_alpha': 0.001
                  'output_dir': "."
                 }
