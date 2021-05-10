@@ -96,9 +96,6 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
         """Fits the model parameters and computes the consensus.
         returns consensus, model parameters"""
 
-        n = dcp.compute_n()
-        n_sum = np.sum(np.sum(n, axis=0), axis=0)
-        # print("n:", n_sum/np.sum(n_sum))
         stan_data, init_data, kwargs = self.map_data_to_model(dcp)
         model = self.fit_and_compute_consensus_model()
         log.info(stan_data.keys())
@@ -165,10 +162,10 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
     @dataclass
     class DataGenerationParameters(GenerativeAbstractConsensus.DataGenerationParameters):
         n_tasks: int = 10
-        num_annotations_per_task: int = 2
+        n_annotations_per_task: int = 2
 
         def __post_init__(self):
-            self.n_annotations = self.n_tasks * self.num_annotations_per_task
+            self.n_annotations = self.n_tasks * self.n_annotations_per_task
 
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "Multinomial")
@@ -228,7 +225,7 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         model = self.sample_annotations_model()
         sample = model.sample(data={'w': 1,
                                     't': dgp.n_tasks,
-                                    'num_annotations_per_task': dgp.num_annotations_per_task,
+                                    'n_annotations_per_task': dgp.n_annotations_per_task,
                                     'k': parameters.tau.shape[0],
                                     't_C': tasks + 1},
                               inits=dataclasses.asdict(parameters),
@@ -325,7 +322,7 @@ class StanDSOptimizeConsensus(StanMultinomialOptimizeConsensus):
         model = self.sample_annotations_model()
         sample = model.sample(data={'w': 1,
                                     't': dgp.n_tasks,
-                                    'num_annotations_per_task': dgp.num_annotations_per_task,
+                                    'n_annotations_per_task': dgp.n_annotations_per_task,
                                     'k': parameters.tau.shape[0],
                                     't_C': tasks + 1},
                               inits=dataclasses.asdict(parameters),
