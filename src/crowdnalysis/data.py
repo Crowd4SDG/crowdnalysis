@@ -140,7 +140,7 @@ class Data:
         else:
             return self.df.index
 
-    def set_question_classes(self, question: str, classes: Optional[List[str]] = None):
+    def set_classes(self, question: str, classes: Optional[List[str]] = None):
         """Specify the `classes` for a `question` which may be different than the label options."""
         if question in self.df.columns:
             if classes is None and question in self._question_classes:
@@ -149,7 +149,7 @@ class Data:
                 cat = self.df[question].dtype
                 self._question_classes[question] = [cat.categories.get_loc(x) for x in classes]
 
-    def get_question_classes(self, question: str) -> List:
+    def get_classes(self, question: str) -> List:
         """Return the `classes` for the `question`.
 
         Label indices are returned if `classes` are not explicitly set.
@@ -317,4 +317,4 @@ class Data:
                                         w_A=self.get_workers(question),
                                         f_A=self.get_annotations(question),
                                         n_labels=self.n_labels(question),
-                                        classes=self.get_question_classes(question))
+                                        classes=self.get_classes(question))
