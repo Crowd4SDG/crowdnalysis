@@ -143,11 +143,11 @@ class Data:
     def set_classes(self, question: str, classes: Optional[List[str]] = None):
         """Specify the `classes` for a `question` which may be different than the label options."""
         if question in self.df.columns:
-            if classes is None and question in self._question_classes:
-                del self._question_classes[question]
-            else:
+            if classes is not None:
                 cat = self.df[question].dtype
                 self._question_classes[question] = [cat.categories.get_loc(x) for x in classes]
+            elif question in self._question_classes:
+                del self._question_classes[question]
 
     def get_classes(self, question: str) -> List:
         """Return the `classes` for the `question`.
