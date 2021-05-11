@@ -132,12 +132,14 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
     def compute_consensus_model(self):
         return CmdStanModel(stan_file=resource_filename(self.model_name + ".consensus.stan"))
 
-    def compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs):
+    def compute_consensus(self, dcp: DiscreteConsensusProblem, parameters: GenerativeAbstractConsensus.Parameters,
+                          **kwargs):
         # print(kwargs["data"])
         stan_data, init_data, kwargs_opt = self.map_data_to_model(dcp)
         # print("stan_data:", stan_data)
         # print("kwargs['data']:", ast.literal_eval(kwargs["data"]))
-        stan_data.update(ast.literal_eval(kwargs["data"]))
+        # stan_data.update(ast.literal_eval(kwargs["data"]))
+        stan_data.update(ast.literal_eval(parameters.to_json()))
 
         model = self.compute_consensus_model()
         results = model.optimize(data=stan_data, inits=init_data, **kwargs_opt)
