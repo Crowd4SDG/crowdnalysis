@@ -170,5 +170,5 @@ class GenerativeAbstractConsensus(AbstractConsensus):
                                 "measure": measure_name,
                                 "value": eval_value})
                             log.info(d)
-                            print(d)
+                            # print(d)
                             yield d
