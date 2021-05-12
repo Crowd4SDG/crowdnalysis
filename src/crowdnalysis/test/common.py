@@ -1,13 +1,14 @@
 import dataclasses
 import pytest
 from dataclasses import dataclass
-from typing import Callable, List, Tuple, Type
+from typing import Callable, List, Tuple, Type, Union
 
 import numpy as np
 
 from . import close, distance, TOLERANCE
 from .. import log
-from ..consensus import GenerativeAbstractConsensus
+from ..consensus import AbstractConsensus, AbstractSimpleConsensus, GenerativeAbstractConsensus
+from ..measures import Accuracy, AllClose
 from ..problems import ConsensusProblem
 
 
@@ -15,27 +16,24 @@ from ..problems import ConsensusProblem
 class SampleForTest:
     """Class for a sampling function's output"""
     problem: ConsensusProblem
-    parameters: GenerativeAbstractConsensus.Parameters
+    parameters: AbstractConsensus.Parameters
 
 
-class BaseTestGenerativeConsensusModel:
-    """Abstract test class for generative consensus models.
+class BaseTestSimpleConsensusModel:
+    """Abstract test class for simple consensus models.
 
-    Conducts following tests:
-    1. `model_cls` class attribute is valid;
-    2. `sampling_funcs` class attribute is valid;
-    3. Asserts each sample provided by sampling functions is valid;
-    4. Runs tests for the following methods of the child consensus model:
-        * `fit_and_compute_consensus`,
-        * `fit`,
-        * `compute_consensus`.
+        Conducts following tests:
+        1. `model_cls` class attribute is valid;
+        2. `sampling_funcs` class attribute is valid;
+        3. Asserts each sample provided by sampling functions is valid;
+        4. Runs tests for the following methods of the child consensus model:
+            * `fit_and_compute_consensus`
 
-    Notes:
-        A child test class only has to override `model_cls` and `sampling_funcs` class attributes.
+        Notes:
+            A child test class only has to override `model_cls` and `sampling_funcs` class attributes.
     """
-
     # Subclass' type; e.g. StanMultinomialOptimizeConsensus
-    model_cls: Type[GenerativeAbstractConsensus] = None
+    model_cls: Union[Type[AbstractSimpleConsensus], Type[AbstractConsensus]] = None
     # A list of zero-argument sampling functions that return `SampleTest` objects
     sampling_funcs: List[Callable] = []
     # Absolute tolerance for the `numpy.allclose` function that may also be overridden, if need be
@@ -64,12 +62,65 @@ class BaseTestGenerativeConsensusModel:
     def _test_fit_and_compute_consensus(cls, sample: SampleForTest):
         model = cls.model_cls()
         consensus, parameters_learned = model.fit_and_compute_consensus(sample.problem)
-        dict_parameters_learned = dataclasses.asdict(parameters_learned)
-        dict_sample_parameters = dataclasses.asdict(sample.parameters)
-        for p in dict_sample_parameters.keys():
-            log.debug("Distance between learned {p} and real {p}: {d:f}".format(
-                p=p, d=distance(dict_parameters_learned[p], dict_sample_parameters[p])))
-            assert close(dict_parameters_learned[p], dict_sample_parameters[p])
+        # Assert consensus
+        if cls.model_cls.__bases__[0] == AbstractSimpleConsensus:  # If this is only a simple consensus model
+            assert Accuracy.evaluate(sample.problem.f_T, consensus) == 1.0
+        else:
+            assert 1. - Accuracy.evaluate(sample.problem.f_T, consensus) <= cls.ABSOLUTE_TOLERANCE
+        # Assert parameters
+        if sample.parameters:
+            dict_parameters_learned = dataclasses.asdict(parameters_learned)
+            dict_sample_parameters = dataclasses.asdict(sample.parameters)
+            for p in dict_sample_parameters.keys():
+                log.debug("Distance between learned {p} and real {p}: {d:f}".format(
+                    p=p, d=distance(dict_parameters_learned[p], dict_sample_parameters[p])))
+                assert close(dict_parameters_learned[p], dict_sample_parameters[p])
+
+    # ==============================  Actual tests  ==============================
+    def test_model_cls(self):
+        # print("In test_model_cls for the model {}".format(self.model_cls.name))
+        assert self.model_cls
+        assert issubclass(self.model_cls, AbstractSimpleConsensus)
+
+    def test_sampling_funcs(self):
+        # print("In test_sampling_funcs for the model {}".format(self.model_cls.name))
+        assert self.sampling_funcs  # Not empty
+        for sf in self.sampling_funcs:
+            assert isinstance(sf, Callable)
+
+    def test_sampling(self, samples):
+        # print("In test_sampling for the model {}".format(self.model_cls.name))
+        assert isinstance(samples, list)
+        assert samples  # Not empty
+        for sample in samples:
+            assert isinstance(sample, SampleForTest)
+
+    def test_fit_and_compute_consensus(self, samples):
+        # print("In test_fit_and_compute_consensus for the model {}".format(self.model_cls.name))
+        for sample in samples:
+            self._test_fit_and_compute_consensus(sample)
+
+
+class BaseTestGenerativeConsensusModel(BaseTestSimpleConsensusModel):
+    """Abstract test class for generative consensus models.
+
+    Conducts following tests:
+    1. `model_cls` class attribute is valid;
+    2. `sampling_funcs` class attribute is valid;
+    3. Asserts each sample provided by sampling functions is valid;
+    4. Runs tests for the following methods of the child consensus model:
+        * `fit_and_compute_consensus`,
+        * `fit`,
+        * `compute_consensus`.
+
+    Notes:
+        A child test class only has to override `model_cls` and `sampling_funcs` class attributes.
+    """
+
+    def test_model_cls(self):
+        # print("In test_model_cls for the model {}".format(self.model_cls.name))
+        assert self.model_cls
+        assert issubclass(self.model_cls, AbstractConsensus)
 
     @classmethod
     def _test_fit(cls, consensus_ref: np.ndarray, parameters_ref: GenerativeAbstractConsensus.Parameters,
@@ -93,31 +144,8 @@ class BaseTestGenerativeConsensusModel:
             consensus_calculated = consensus_calculated[0]
             # TODO (OM, 20210511): Check if the `kwargs_opt` return value of
             #  `AbstractStanOptimizeConsensus.compute_consensus()`is necessary
-        assert np.allclose(consensus_calculated, consensus_ref, atol=cls.ABSOLUTE_TOLERANCE)
-
-    # ==============================  Actual tests  ==============================
-    def test_model_cls(self):
-        # print("In test_model_cls for the model {}".format(self.model_cls.name))
-        assert self.model_cls
-        assert issubclass(self.model_cls, GenerativeAbstractConsensus)
-
-    def test_sampling_funcs(self):
-        # print("In test_sampling_funcs for the model {}".format(self.model_cls.name))
-        assert self.sampling_funcs  # Not empty
-        for sf in self.sampling_funcs:
-            assert isinstance(sf, Callable)
-
-    def test_sampling(self, samples):
-        # print("In test_sampling for the model {}".format(self.model_cls.name))
-        assert isinstance(samples, list)
-        assert samples  # Not empty
-        for sample in samples:
-            assert isinstance(sample, SampleForTest)
-
-    def test_fit_and_compute_consensus(self, samples):
-        # print("In test_fit_and_compute_consensus for the model {}".format(self.model_cls.name))
-        for sample in samples:
-            self._test_fit_and_compute_consensus(sample)
+        assert AllClose.evaluate(consensus_calculated, consensus_ref, atol=cls.ABSOLUTE_TOLERANCE)
+        assert 1. - Accuracy.evaluate(problem.f_T, consensus_calculated) <= cls.ABSOLUTE_TOLERANCE
 
     def test_fit(self, ref_consensus_params_problem):
         # print("In test_fit for the model {}".format(self.model_cls.name))
