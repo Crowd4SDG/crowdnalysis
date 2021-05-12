@@ -2,7 +2,7 @@ import dataclasses
 import json
 from dataclasses import dataclass
 from itertools import product
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 import numpy as np
 from numpyencoder import NumpyEncoder
@@ -27,12 +27,17 @@ class JSONDataClass:
         return [cls(**d) for d in ds]
 
 
-@dataclass
+@dataclass(eq=False)
 class ConsensusProblem(JSONDataClass):
     """
-    Example:
+    Notes: see https://www.mdpi.com/2227-7390/9/8/875, p.4
+        W*      A*        T*
+        ^        ^        ^
+    f_W |    f_A |    f_T |
+        |        |        |
+        |   w_A  |  t_A   |
+        W <----- A -----> T
 
-        TODO (OM, 20210416): Add examples to init params
     """
     n_tasks: int = 0
     # features of the tasks
@@ -63,8 +68,24 @@ class ConsensusProblem(JSONDataClass):
             self.f_A = self.f_A[:, np.newaxis]
         self.n_annotations = self.f_A.shape[0]
 
+    def __eq__(self, other):
+        """Compare two `ConsensusProblem`s"""
+        # TODO (OM, 20210512): This might need further elaboration depending on the fields of future subclasses
+        if not issubclass(self.__class__, other.__class__):
+            return False
+        return self.to_json() == other.to_json()
+        # for field_, val1 in dataclasses.asdict(self).items():
+        #     val2 = getattr(other, field_)
+        #     if isinstance(val1, np.ndarray):
+        #         eq_ = np.array_equal(val1, val2)
+        #     else:
+        #         eq_ = val1 == val2
+        #     if not eq_:
+        #         return False
+        # return True
 
-@dataclass
+
+@dataclass(eq=False)
 class DiscreteConsensusProblem(ConsensusProblem):
     """
     Notes:
@@ -90,6 +111,9 @@ class DiscreteConsensusProblem(ConsensusProblem):
         if self.classes is None:
             # By default every label is a real class
             self.classes = list(range(self.n_labels))
+
+    def __eq__(self, other):
+        return super().__eq__(other)
 
     def compute_n(self, ignore_zero_annots: bool = True) -> np.ndarray:
         """Compute the `n` multi-dimensional array in Dawid-Skene (1979).
