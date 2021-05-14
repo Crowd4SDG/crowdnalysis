@@ -149,7 +149,7 @@ class Data:
             elif question in self._question_classes:
                 del self._question_classes[question]
 
-    def get_classes(self, question: str) -> List:
+    def get_classes(self, question: str) -> List[int]:
         """Return the `classes` for the `question`.
 
         Label indices are returned if `classes` are not explicitly set.
