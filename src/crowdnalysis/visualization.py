@@ -8,6 +8,9 @@ from dominate import document, tags, util
 from .data import Data
 
 
+IMG_ON_ERROR = "this.src='{}';".format("https://pbs.twimg.com/profile_images/1260593552515641345/j_TGePnL_400x400.jpg")
+
+
 def html_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, width=120, height=90,
                      dec=3, warn_threshold=.1, output_file: str = None, pretty=True) -> str:
     """Returns an HTML string that displays the images of tasks.
@@ -61,6 +64,11 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
     best = np.argmax(consensus, axis=1)
     labels = np.unique(best)
     label_names = list(data.df[question].cat.categories)
+    dcp = data.get_dcp(question)
+    if dcp.n_tasks > consensus.shape[0]:
+        _, filtered_tasks = dcp.compute_n(ignore_zero_annots=True)
+    else:
+        filtered_tasks = []
 
     with document(title=TITLE) as doc:
         with doc.head:
@@ -71,7 +79,11 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
             body.add(tags.p(util.raw(NOTES)))
             for label in labels:
                 task_indices = np.where(best == label)[0]
-                task_picture_links = data.get_field(task_indices, picture_field, unique=True)
+                data_task_indices = task_indices
+                for i in filtered_tasks:  # Increment tasks indices accordingly to reflect filtered tasks
+                    data_task_indices = np.apply_along_axis(lambda x: np.where(x >= i, x + 1, x), axis=0,
+                                                            arr=data_task_indices)
+                task_picture_links = data.get_field(data_task_indices, picture_field, unique=True)
                 label_id = "label" + str(label)
                 body.add(tags.h2("{} ({}):".format(str(label_names[label]).title(), len(task_indices)), id=label_id))
                 n_warn = 0
@@ -83,13 +95,14 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
                         probabilities.sort(key=lambda x: x[0], reverse=True)
                         probs_str = "\n".join("- {0}: {1:.{2}f}".format(
                             label_names[li], p, dec) for p, li in probabilities[:2])
-                        img_title = "Task Index: {}\n{}".format(str(task_index), probs_str)
+                        img_title = "Task Index: {}\n{}".format(str(data_task_indices[ix]), probs_str)
                         if probabilities[0][0] - probabilities[1][0] <= warn_threshold:
                             n_warn += 1
                             kwargs = {"cls": "warn"}
                         else:
                             kwargs = {}
-                        ti += tags.a(tags.img(src=tpl, title=img_title, **kwargs), href=tpl)
+
+                        ti += tags.a(tags.img(src=tpl, title=img_title, onerror=IMG_ON_ERROR, **kwargs), href=tpl)
                     if n_warn > 0:
                         label_header = doc.body.getElementById(label_id)
                         label_header.add_raw_string(" (<span style='color:{c}'>{n}</span> warning{s})".format(
@@ -239,6 +252,11 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, c
     best = np.argmax(consensus, axis=1)
     labels = np.unique(best)
     label_names = list(data.df[question].cat.categories)
+    dcp = data.get_dcp(question)
+    if dcp.n_tasks > consensus.shape[0]:
+        _, filtered_tasks = dcp.compute_n(ignore_zero_annots=True)
+    else:
+        filtered_tasks = []
 
     with document(title=TITLE) as doc:
         with doc.head:
@@ -254,7 +272,11 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, c
             n_outline_good_total = 0
             for label in labels:
                 task_indices = np.where(best == label)[0]
-                task_picture_links = data.get_field(task_indices, picture_field, unique=True)
+                data_task_indices = task_indices
+                for i in filtered_tasks:  # Increment tasks indices accordingly to reflect filtered tasks
+                    data_task_indices = np.apply_along_axis(lambda x: np.where(x >= i, x + 1, x), axis=0,
+                                                            arr=data_task_indices)
+                task_picture_links = data.get_field(data_task_indices, picture_field, unique=True)
                 label_id = "label" + str(label)
                 body.add(tags.h2("{} ({}):".format(str(label_names[label]).title(), len(task_indices)), id=label_id))
                 n_warn = 0
@@ -264,11 +286,14 @@ def html_description_crossed(consensus: np.ndarray, data: Data, question: str, c
                     for ix, tpl in enumerate(task_picture_links):
                         ti = tags.div(cls="task-image")
                         task_index = task_indices[ix]
+                        for i in filtered_tasks:  # Increment tasks indices accordingly to reflect filtered tasks
+                            task_indices = np.apply_along_axis(lambda x: np.where(x >= i, x + 1, x), axis=0,
+                                                               arr=task_indices)
                         probabilities = [(p, li) for li, p in enumerate(consensus[task_index, :])]
                         probabilities.sort(key=lambda x: x[0], reverse=True)
                         probs_str = "\n".join("- {0}: {1:.{2}f}".format(
                             label_names[li], p, dec) for p, li in probabilities[:2])
-                        img_title = "Task Index: {}\n{}".format(str(task_index), probs_str)
+                        img_title = "Task Index: {}\n{}".format(str(data_task_indices[ix]), probs_str)
                         is_warning = probabilities[0][0] - probabilities[1][0] <= warn_threshold
                         is_outlined = (included == (task_index in compare_task_indices))
                         if is_warning:
