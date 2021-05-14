@@ -20,7 +20,7 @@ class DawidSkene(GenerativeAbstractConsensus):
     @classmethod
     def fit_and_compute_consensus(cls, dcp: DiscreteConsensusProblem, max_iterations=10000,
                                   tolerance=1e-3, prior=1.0, verbose=False, init_params=None):
-        n = dcp.compute_n()
+        n, _ = dcp.compute_n()
         # First estimate of T_{i,j} is done by probabilistic consensus
         if init_params is not None:
             tau = init_params.tau
@@ -57,13 +57,13 @@ class DawidSkene(GenerativeAbstractConsensus):
 
     @classmethod
     def fit(cls, dcp: DiscreteConsensusProblem, T, prior=1.0):
-        n = dcp.compute_n()
+        n, _ = dcp.compute_n()
         tau, log_pi = cls._m_step(T, n, prior)
         return cls.Parameters(tau=tau, pi=np.exp(log_pi))
 
     @classmethod
     def compute_consensus(cls, dcp: DiscreteConsensusProblem, parameters: Parameters):
-        n = dcp.compute_n()
+        n, _ = dcp.compute_n()
         return cls._e_step(n, np.log(parameters.pi), parameters.tau)
 
     # Methods from GenerativeAbstractConsensus
@@ -128,8 +128,8 @@ class DawidSkene(GenerativeAbstractConsensus):
 
     @classmethod
     def _m_step_log_pi(cls, T, n, prior):
-        log.debug(T.shape)
-        log.debug(n.shape)
+        log.debug("_m_step_log_pi -> T.shape: {}".format(str(T.shape)))
+        log.debug("_m_step_log_pi -> n.shape: {}".format(str(n.shape)))
         _pi = np.swapaxes(np.dot(T.transpose(), n), 0, 1)
         _pi += prior
         sums = np.sum(_pi, axis=2)

@@ -14,7 +14,8 @@ class Probabilistic(AbstractSimpleConsensus):
 
     @classmethod
     def fit_and_compute_consensus(cls, dcp: DiscreteConsensusProblem, softening=0.1):
-        n = dcp.compute_n().sum(axis=0) + softening
+        n, _ = dcp.compute_n()
+        n = n.sum(axis=0) + softening
         n = n[:, dcp.classes]
         consensus = n / np.sum(n, axis=1)[:, np.newaxis]
         # print("Probabilistic._probabilistic_consensus ({}) -> \n".format(consensus.shape), consensus)

@@ -2,7 +2,7 @@ import dataclasses
 import json
 from dataclasses import dataclass
 from itertools import product
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from numpyencoder import NumpyEncoder
@@ -115,19 +115,20 @@ class DiscreteConsensusProblem(ConsensusProblem):
     def __eq__(self, other):
         return super().__eq__(other)
 
-    def compute_n(self, ignore_zero_annots: bool = True) -> np.ndarray:
+    def compute_n(self, ignore_zero_annots: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """Compute the `n` multi-dimensional array in Dawid-Skene (1979).
 
         Args:
-            ignore_zero_annots: Ignores tasks with zero # of annotations.
+            ignore_zero_annots: If True, filters out tasks with zero # of annotations.
 
         Returns:
-
+            Tuple of (`n`, indices of filtered tasks)
         """
         # TODO: This should be optimized
         n = np.zeros((self.n_workers, self.n_tasks, self.n_labels))
         for i in range(self.n_annotations):
             n[self.w_A[i], self.t_A[i], self.f_A[i, 0]] += 1
+        zero_annots = np.array([])
         if ignore_zero_annots:
             n_sum_w_A = n.sum(axis=0)
             zero_annots = np.all(n_sum_w_A == 0, axis=1)
@@ -135,4 +136,4 @@ class DiscreteConsensusProblem(ConsensusProblem):
                 n = n[:, ~zero_annots, :]
                 log.warn("{} tasks with zero annotations out of {} tasks in 'n' are eliminated.".format(
                     np.sum(zero_annots), n_sum_w_A.shape[0]))
-        return n
+        return n, np.where(zero_annots)[0]

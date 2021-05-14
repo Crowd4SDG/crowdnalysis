@@ -17,7 +17,8 @@ def get_n_and_ranges(d: Data, question: str, ignore_le1_annots: bool = True) -> 
             there have to be > 1 annotations for a task.
     """
     dcp = d.get_dcp(question)
-    n = dcp.compute_n(ignore_zero_annots=False).sum(axis=0)
+    n, _ = dcp.compute_n(ignore_zero_annots=False)
+    n = n.sum(axis=0)
     if ignore_le1_annots:
         le1_annots = n.sum(axis=1) <= 1
         if np.any(le1_annots):
