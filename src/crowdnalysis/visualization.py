@@ -12,7 +12,8 @@ IMG_ON_ERROR = "this.src='{}';".format("https://pbs.twimg.com/profile_images/126
 
 
 def html_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, width=120, height=90,
-                     dec=3, warn_threshold=.1, output_file: str = None, pretty=True) -> str:
+                     dec=3, warn_threshold=.1, output_file: str = None, pretty=True,
+                     filtered_task_indices: np.ndarray = None) -> str:
     """Returns an HTML string that displays the images of tasks.
 
     Optionally, saves the string to an HTML file.
@@ -29,6 +30,7 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
             as warning
         output_file: (optional) full path to the output HTML file
         pretty: True, for a more human readable HTML string; False, for a smaller sized file.
+        filtered_task_indices: List of indices of tasks with zero annotations
 
     Returns:
         HTML string
@@ -101,12 +103,21 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
                             kwargs = {"cls": "warn"}
                         else:
                             kwargs = {}
-
                         ti += tags.a(tags.img(src=tpl, title=img_title, onerror=IMG_ON_ERROR, **kwargs), href=tpl)
                     if n_warn > 0:
                         label_header = doc.body.getElementById(label_id)
                         label_header.add_raw_string(" (<span style='color:{c}'>{n}</span> warning{s})".format(
                             c=FRAME_COLOR, n=str(n_warn), s="s" if n_warn > 1 else ""))
+            # Filtered tasks
+            if len(filtered_task_indices):
+                label_id = "label_filtered"
+                body.add(tags.h2("Tasks without annotations ({}):".format(len(filtered_task_indices)), id=label_id))
+                filtered_task_picture_links = data.get_field(filtered_task_indices, picture_field, unique=True)
+                with body.add(tags.div(cls='labels')):
+                    for ix, tpl in enumerate(filtered_task_picture_links):
+                        ti = tags.div(cls="task-image")
+                        img_title = "Task Index: {}".format(str(filtered_task_indices[ix]))
+                        ti += tags.a(tags.img(src=tpl, title=img_title, onerror=IMG_ON_ERROR), href=tpl)
     html_str = doc.render(pretty=pretty, xhtml=True)
     if output_file:
         with open(output_file, 'w') as f:
