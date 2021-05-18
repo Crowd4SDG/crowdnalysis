@@ -39,7 +39,7 @@ def dcp_kwargs() -> Dict[str, Dict[str, Any]]:
 
 
 @pytest.fixture(scope="module")
-def single_file_records():
+def single_file_records() -> np.ndarray:
     return np.array([(USER_IDS[i], TASK_RUN_IDS[i], ANSWER_0[i], ANSWER_1[i], EXTRA_COL[i])
                      for i in range(len(TASK_RUN_IDS))],
                     dtype=[("user_id", "U15"), ("task_id", "i4"),
@@ -161,6 +161,9 @@ def test_set_condition(data):
 def test_set_classes(data):
     for q in ["question_0", "question_1"]:
         classes_ = CATEGORIES[q].categories.tolist()
+        # Assert a ValueError is raised if the classes is not a sublist of the categories starting from index 0
+        with pytest.raises(ValueError):
+            data.set_classes(q, [classes_[0], classes_[-1]])
         assert data.get_classes(q) == list(range(len(classes_)))
         classes_.pop(-1)
         data.set_classes(q, classes_)
