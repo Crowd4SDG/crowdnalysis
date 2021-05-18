@@ -81,7 +81,7 @@ class Data:
         # print(df[annotator_id_col_name].to_numpy())
         annotator_ids, inverse = np.unique(df[annotator_id_col_name].to_numpy(), return_inverse=True)
         d.set_annotator_ids(annotator_ids)
-        df["annotator_index"] = inverse
+        df[cls.COL_WORKER_INDEX] = inverse
 
         d.set_df(df, categories)
 
