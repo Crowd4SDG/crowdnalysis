@@ -148,16 +148,6 @@ def test_get_field(data):
                               np.unique(data.get_field(task_indices=task_indices, field=field, unique=True)))
 
 
-def test_set_condition(data):
-    q = "question_1"
-    data.set_condition(q, "question_0 in ['Yes', 'Not sure']")
-    assert np.array_equal(data.valid_rows(q), [ix for ix, val in enumerate(ANSWER_0) if val in ["Yes", "Not sure"]])
-    # Clear the condition
-    data.set_condition(q, None)
-    assert np.array_equal(data.valid_rows(q), data.df.index)
-    data.set_condition(q, "question_0 in ['Yes', 'Not sure']")
-
-
 def test_set_classes(data):
     for q in ["question_0", "question_1"]:
         classes_ = CATEGORIES[q].categories.tolist()
@@ -171,6 +161,15 @@ def test_set_classes(data):
         # Reset the classes
         data.set_classes(q, None)
         assert data.get_classes(q) == list(range(len(CATEGORIES[q].categories.tolist())))
+
+
+def test_set_condition(data):
+    q = "question_1"
+    data.set_condition(q, "question_0 in ['Yes', 'Not sure']")
+    assert np.array_equal(data.valid_rows(q), [ix for ix, val in enumerate(ANSWER_0) if val in ["Yes", "Not sure"]])
+    # Clear the condition
+    data.set_condition(q, None)
+    assert np.array_equal(data.valid_rows(q), data.df.index)
 
 
 def test_make_and_condition():
