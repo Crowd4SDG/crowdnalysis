@@ -141,10 +141,17 @@ class Data:
             return self.df.index
 
     def set_classes(self, question: str, classes: Optional[List[str]] = None):
-        """Specify the `classes` for a `question` which may be different than the label options."""
+        """Specify the `classes` for a `question` which may be different than the label options.
+
+        Raises:
+            ValueError: If the `classes` is not a sublist of the `question`'s categories starting from index 0.
+        """
+
         if question in self.df.columns:
             if classes is not None:
                 cat = self.df[question].dtype
+                if classes != cat.categories.tolist()[:len(classes)]:
+                    raise ValueError("Classes must be a sublist of the question's categories starting from index 0!")
                 self._question_classes[question] = [cat.categories.get_loc(x) for x in classes]
             elif question in self._question_classes:
                 del self._question_classes[question]
