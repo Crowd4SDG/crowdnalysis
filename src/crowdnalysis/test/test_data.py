@@ -12,12 +12,12 @@ from ..problems import DiscreteConsensusProblem
 
 TASK_IDS = [12, 10, 11]
 TASK_KEYS = [f"t{i}" for i in TASK_IDS]
-TASK_RUN_IDS = [10, 11, 12, 11, 12, 11, 10, 10, 12]
-USER_IDS = ["u2", "u0", "u1", "u1", "u2", "u2", "u0", "u1", "u0"]
-CATEGORIES = {"question_0": CategoricalDtype(categories=["Yes", "No"], ordered=False),
-              "question_1": CategoricalDtype(categories=["A", "B", "C"], ordered=False)}
-ANSWER_0 = ["No", "No", "Yes", "Yes", "No", "Yes", "No", "Yes", "No"]
-ANSWER_1 = ["C", "A", "B", "B", "C", "A", "B", "A", "B"]
+TASK_RUN_IDS = [10, 11, 12, 11, 12, 11, 10, 10, 12, 10, 11, 12]
+USER_IDS = ["u2", "u0", "u1", "u1", "u2", "u2", "u0", "u1", "u0", "u3", "u3", "u3"]
+CATEGORIES = {"question_0": CategoricalDtype(categories=["Yes", "No", "Not sure"], ordered=False),
+              "question_1": CategoricalDtype(categories=["A", "B", "C", "Not answered"], ordered=False)}
+ANSWER_0 = ["No", "No", "Yes", "Yes", "Not sure", "Yes", "Not sure", "Yes", "No", "No", "Yes", "No"]
+ANSWER_1 = ["C", "Not answered", "B", "B", "C", "A", "B", "A", "B", "Not answered", "A", "A"]
 EXTRA_COL = ["".join(random.sample("XYZ", 3)) for i in range(len(TASK_RUN_IDS))]
 
 
@@ -38,33 +38,36 @@ def dcp_kwargs() -> Dict[str, Dict[str, Any]]:
     return kwargs_return
 
 
+@pytest.fixture(scope="module")
+def single_file_records():
+    return np.array([(USER_IDS[i], TASK_RUN_IDS[i], ANSWER_0[i], ANSWER_1[i], EXTRA_COL[i])
+                     for i in range(len(TASK_RUN_IDS))],
+                    dtype=[("user_id", "U15"), ("task_id", "i4"),
+                           ("question_0", "U15"), ("question_1", "U15"), ("extra_col", "U15")])
+
+
 @pytest.fixture
-def mock_pybossa_csv(monkeypatch):
+def mock_pybossa_csv(monkeypatch, single_file_records):
     """Mocks `pandas.read_csv()` for three different Pybossa files"""
     def mock_read(*args, **kwargs):
         file_name = args[0]
         if file_name == "task.csv":
-            records = np.array(TASK_KEYS, dtype=[("task_key", "U10")])
+            records = np.array(TASK_KEYS, dtype=[("task_key", "U15")])
         elif file_name == "task_info.csv":
             records = np.array(TASK_IDS, dtype=[("task_id", "i4")])
         else:  # "task_run.csv"
-            records = np.array([(USER_IDS[i], TASK_RUN_IDS[i], ANSWER_0[i], ANSWER_1[i], EXTRA_COL[i])
-                                for i in range(len(TASK_RUN_IDS))],
-                               dtype=[("user_id", "U5"), ("task_id", "i4"),
-                                      ("question_0", "U5"), ("question_1", "U5"), ("extra_col", "U5")])
+            records = single_file_records
         df = pd.DataFrame.from_records(records)
+        # print("df:\n", df)
         return df
     monkeypatch.setattr(pd, "read_csv", mock_read, raising=True)
 
 
 @pytest.fixture
-def mock_mturk_csv(monkeypatch):
+def mock_mturk_csv(monkeypatch, single_file_records):
     """Mocks `pandas.read_csv()` for the single MTurk file"""
     def mock_read(*args, **kwargs):
-        records = np.array([(USER_IDS[i], TASK_RUN_IDS[i], ANSWER_0[i], ANSWER_1[i], EXTRA_COL[i])
-                            for i in range(len(TASK_RUN_IDS))],
-                           dtype=[("user_id", "U5"), ("task_id", "i4"),
-                                  ("question_0", "U5"), ("question_1", "U5"), ("extra_col", "U5")])
+        records = single_file_records
         df = pd.DataFrame.from_records(records)
         return df
     monkeypatch.setattr(pd, "read_csv", mock_read, raising=True)
@@ -118,7 +121,7 @@ def test_from_pybossa(mock_pybossa_csv):
 
 
 def test_from_mturk(data):
-    print("\n", data.df)
+    # print("\n", data.df)
     assert_data_object(data)
 
 
@@ -138,19 +141,33 @@ def test_get_field(data):
             indices += [i for i, x in enumerate(TASK_RUN_IDS) if x == TASK_IDS[ix]]
         # print("indices:", indices)
         output = np.array(answers)[indices]
-        # print("output:", output)  # ['Yes' 'No' 'No' 'No' 'No' 'Yes'] and ['B' 'C' 'B' 'C' 'B' 'A']
+        # print("output:", output)
         # print("return:", data.get_field(task_indices=task_indices, field=field, unique=False))
         assert np.array_equal(output, data.get_field(task_indices=task_indices, field=field, unique=False))
         assert np.array_equal(np.unique(output),
                               np.unique(data.get_field(task_indices=task_indices, field=field, unique=True)))
 
 
-def test_classes():
-    pass
+def test_set_condition(data):
+    q = "question_1"
+    data.set_condition(q, "question_0 in ['Yes', 'Not sure']")
+    assert np.array_equal(data.valid_rows(q), [ix for ix, val in enumerate(ANSWER_0) if val in ["Yes", "Not sure"]])
+    # Clear the condition
+    data.set_condition(q, None)
+    assert np.array_equal(data.valid_rows(q), data.df.index)
+    data.set_condition(q, "question_0 in ['Yes', 'Not sure']")
 
 
-def test_conditions():
-    pass
+def test_set_classes(data):
+    for q in ["question_0", "question_1"]:
+        classes_ = CATEGORIES[q].categories.tolist()
+        assert data.get_classes(q) == list(range(len(classes_)))
+        classes_.pop(-1)
+        data.set_classes(q, classes_)
+        assert data.get_classes(q) == list(range(len(classes_)))
+        # Reset the classes
+        data.set_classes(q, None)
+        assert data.get_classes(q) == list(range(len(CATEGORIES[q].categories.tolist())))
 
 
 def test_make_and_condition():
