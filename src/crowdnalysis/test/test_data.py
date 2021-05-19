@@ -27,12 +27,12 @@ def dcp_kwargs() -> Dict[str, Dict[str, Any]]:
         "n_tasks": len(TASK_IDS),
         "n_workers": np.unique(USER_IDS).size,
         "t_A": [TASK_IDS.index(id_) for id_ in TASK_RUN_IDS],
-        "w_A": [np.unique(USER_IDS).tolist().index(id_) for id_ in USER_IDS]}
+        "w_A": [np.where(np.unique(USER_IDS) == id_)[0][0] for id_ in USER_IDS]}
     kwargs_return = {}
     for q, answers in [("question_0", ANSWER_0), ("question_1", ANSWER_1)]:
         kwargs_q = kwargs_common.copy()
         kwargs_q.update({"n_labels": CATEGORIES[q].categories.size,
-                         "f_A": [CATEGORIES[q].categories.tolist().index(a) for a in answers]})
+                         "f_A": [CATEGORIES[q].categories.get_loc(a) for a in answers]})
         kwargs_return[q] = kwargs_q
     # print("\n", kwargs_return)
     return kwargs_return
