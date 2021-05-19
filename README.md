@@ -1,4 +1,5 @@
 [![IIIA-CSIC](https://img.shields.io/badge/brewing%20at-IIIA--CSIC-blue)](https://iiia.csic.es)
+[![codecov](https://codecov.io/gh/Crowd4SDG/crowdnalysis/branch/v2_refactoring/graph/badge.svg?token=JZ8BD8MZ9D)](https://codecov.io/gh/Crowd4SDG/crowdnalysis)
 
 # crowdnalysis
  Crowdsourcing Citizen Science projects usually require citizens to classify items (images, pdfs, songs,&#8230;) 
@@ -30,10 +31,17 @@ We use pytest as testing framework. Tests can be run by doing:
 
 `pytest src/`
 
-If we want to get the logs of the execution do 
+If we want to get the logs of the execution, do 
 
 `pytest src/ --log-cli-level 0`
 
+To generate a coverage report along with the test, run
+
+`pytest --cov=src/`
+
+To display the latest generated report, execute
+
+`coverage report`
 
 ## Logging 
 
