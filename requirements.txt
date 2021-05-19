@@ -12,3 +12,4 @@ cmdstanpy
 pytest
 numpyencoder
 flake8
+pytest-cov
