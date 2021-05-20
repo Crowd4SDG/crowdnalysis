@@ -12,4 +12,5 @@ cmdstanpy
 pytest
 numpyencoder
 flake8
+coverage
 pytest-cov
