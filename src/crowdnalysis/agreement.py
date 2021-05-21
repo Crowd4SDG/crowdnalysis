@@ -28,9 +28,17 @@ def get_n_and_ranges(d: Data, question: str, ignore_le1_annots: bool = True) -> 
 
 
 def fleiss_kappa(d: Data, question: str) -> float:
-    """Return Fleiss' kappa value for the annotation data"""
+    """Return Fleiss' kappa value for the annotation data
+
+    Raises:
+        ValueError: If all tasks don't have the same number of annotations
+    """
     n, *_ = get_n_and_ranges(d, question)
-    kappa = inter_rater.fleiss_kappa(table=n, method='fleiss')
+    n_sum = np.sum(n, axis=1)
+    if np.all(n_sum == np.amax(n_sum)):
+        kappa = inter_rater.fleiss_kappa(table=n, method='fleiss')
+    else:
+        raise ValueError("All tasks must have equal number of annotations")
     return kappa
 
 
