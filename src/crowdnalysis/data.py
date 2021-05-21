@@ -6,18 +6,6 @@ import pandas as pd
 from .problems import DiscreteConsensusProblem
 
 
-#
-# class AbstractCondition:
-#     def filter(self):
-#
-# @dataclass
-# class BasicCondition(JSONDataClass, AbstractCondition):
-#     question: Any = None
-#     value: Any = None
-#
-# class AndCondition()
-#     init(el1,el2):
-
 class Data:
     """
     This is the main class for storing answers
