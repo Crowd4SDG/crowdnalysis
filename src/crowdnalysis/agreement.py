@@ -3,14 +3,12 @@ from typing import Tuple
 import numpy as np
 from statsmodels.stats import inter_rater
 
-from .data import Data
 from . import log
+from .data import Data
 
 
 def get_n_and_ranges(d: Data, question: str, ignore_le1_annots: bool = True) -> Tuple[np.ndarray, int]:
-    """Return 2D (n_tasks, n_labels) annotation count matrix `n`, and n_tasks, n_labels, n_annotators values
-
-    where n_tasks: # of tasks, n_labels: # of labels, n_annotators: # of annotators
+    """Return 2D (n_tasks, n_labels) annotation count matrix `n`, and # of unique tasks in data `d`.
 
     Args:
         ignore_le1_annots: Ignores tasks with # of annotations ≤ 1. This makes sense since to speak of an agreement,
@@ -22,7 +20,7 @@ def get_n_and_ranges(d: Data, question: str, ignore_le1_annots: bool = True) -> 
     if ignore_le1_annots:
         le1_annots = n.sum(axis=1) <= 1
         if np.any(le1_annots):
-            log.warn("{} tasks with ≤ 1 annotations out of {} tasks are ignored in agreement calculation.".format(
+            log.warning("{} tasks with ≤ 1 annotations out of {} tasks are ignored in agreement calculation.".format(
                 np.sum(le1_annots), n.shape[0]))
             # print("n[le1_annots, :]:\n", n[le1_annots, :])
             n = n[~le1_annots, :]

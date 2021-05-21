@@ -116,7 +116,9 @@ class DiscreteConsensusProblem(ConsensusProblem):
         return super().__eq__(other)
 
     def compute_n(self, ignore_zero_annots: bool = True) -> Tuple[np.ndarray, np.ndarray]:
-        """Compute the `n` multi-dimensional array in Dawid-Skene (1979).
+        """Compute the `n` three-dimensional array in Dawid-Skene (1979).
+
+        Dimensions: (n_workers, n_tasks, n_labels)
 
         Args:
             ignore_zero_annots: If True, filters out tasks with zero # of annotations.
