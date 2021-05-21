@@ -28,4 +28,4 @@ def test_all_factory_methods():
     # Unregister
     Factory.unregister_consensus_algorithm(DummyConsensus.name)
     with pytest.raises(KeyError):
-        assert Factory.get_consensus_algorithm(DummyConsensus.name)
+        assert Factory.unregister_consensus_algorithm(DummyConsensus.name)
