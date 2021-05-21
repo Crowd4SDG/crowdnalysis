@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Union, Tuple
+from typing import Any, List, Optional, Union, Tuple, Callable
 
 import numpy as np
 import pandas as pd
@@ -26,8 +26,16 @@ class Data:
     - each task with the very same questions.
     """
 
-    COL_TASK_INDEX = "task_index"  # column name in Data.df
+    # Column names in Data.df
+    COL_USER_ID = "user_id"
+    COL_TASK_ID = "task_id"
+    COL_TASK_INDEX = "task_index"  #
     COL_WORKER_INDEX = "annotator_index"
+
+    @staticmethod
+    def COL_QUESTION_INDEX(question: str) -> str:  # Beware! A constant imposter!
+        """Column name for the `question` in `Data.df`"""
+        return f"{question}_index"
 
     def __init__(self):
         """
@@ -48,7 +56,7 @@ class Data:
         self._question_classes = {}
 
     @classmethod
-    def from_df(cls, df, data_src=None, task_id_col_name="task_id", annotator_id_col_name="annotator_id",
+    def from_df(cls, df, data_src=None, task_id_col_name=COL_TASK_ID, annotator_id_col_name=COL_USER_ID,
                 questions=None, task_ids=None, categories=None):
         """
         Create a Data object from dataframe df.
@@ -172,7 +180,7 @@ class Data:
         if other_columns is None:
             other_columns = []
         df = df.copy()
-        columns_to_retain = ["task_id", "user_id"] + questions + other_columns
+        columns_to_retain = [cls.COL_TASK_ID, cls.COL_USER_ID] + questions + other_columns
         df = preprocess(df)
         df = df[columns_to_retain]
         return df
@@ -191,7 +199,7 @@ class Data:
         df = cls._preprocess(df, questions, preprocess, other_columns)
         # print("_from_single_file -> df columns AFTER preprocessing: ", df.columns)
 
-        return cls.from_df(df, data_src=data_src, annotator_id_col_name="user_id", questions=questions,
+        return cls.from_df(df, data_src=data_src, annotator_id_col_name=cls.COL_USER_ID, questions=questions,
                            task_ids=task_ids, categories=categories)
 
     @classmethod
@@ -215,13 +223,13 @@ class Data:
             other_columns = []
         df = pd.read_csv(file_name, delimiter=delimiter)
         if task_info_file is not None:
-            t_df = get_tasks(task_file, task_info_file, "task_id", field_task_key)
-            df = pd.merge(df, t_df, how="left", left_on="task_id", right_on="task_id")
+            t_df = get_tasks(task_file, task_info_file, cls.COL_TASK_ID, field_task_key)
+            df = pd.merge(df, t_df, how="left", left_on=cls.COL_TASK_ID, right_on=cls.COL_TASK_ID)
         # print("from_pybossa -> df columns before preprocessing: ", df.columns)
         df = cls._preprocess(df, questions, preprocess, other_columns=other_columns)
         #  print("from_pybossa -> df columns AFTER preprocessing: ", df.columns)
         # print(df)
-        return cls.from_df(df, data_src=data_src, annotator_id_col_name="user_id", questions=questions,
+        return cls.from_df(df, data_src=data_src, annotator_id_col_name=cls.COL_USER_ID, questions=questions,
                            task_ids=task_ids, categories=categories)
 
     @classmethod
@@ -265,7 +273,7 @@ class Data:
                 self.df[q] = self.df[q].astype(t)
             else:
                 self.df[q] = self.df[q].astype(categories[q])
-        question_indexes = [x + "_index" for x in self.questions]
+        question_indexes = [self.COL_QUESTION_INDEX(x) for x in self.questions]
         self.df[question_indexes] = self.df[self.questions].apply(lambda x: x.cat.codes)
 
     def n_labels(self, question):
@@ -281,7 +289,7 @@ class Data:
 
     def get_annotations(self, question):
         ix = self.valid_rows(question)
-        return self.df.iloc[ix][question + "_index"].to_numpy()
+        return self.df.iloc[ix][self.COL_QUESTION_INDEX(question)].to_numpy()
 
     # def get_question_matrix(self, question):
     #    df = self.df[[self.COL_TASK_INDEX, self.COL_WORKER_INDEX, question+"_index"]]
