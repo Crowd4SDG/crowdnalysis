@@ -1,8 +1,8 @@
 import dataclasses
-import pytest
 from dataclasses import dataclass
 from typing import Callable, List, Tuple, Type
 
+import pytest
 import numpy as np
 
 from . import close, distance, TOLERANCE
