@@ -1,4 +1,4 @@
-from typing import Type
+from typing import List, Type
 
 from . import cmdstan, dawid_skene, simple
 from .consensus import AbstractSimpleConsensus
@@ -6,7 +6,15 @@ from .consensus import AbstractSimpleConsensus
 
 class Factory:
     """Factory class for consensus algorithms"""
-    algorithms = {}
+    _algorithms = {}
+
+    @classmethod
+    def _msg_exception(cls, name: str, options: bool = True) -> str:
+        """Return the message to be used in `KeyError`s"""
+        msg = "{} algorithm is not registered.".format(name)
+        if options:
+            msg = "{}. Available options are {}.".format(msg, str(cls.list_registered_algorithms()))
+        return msg
 
     @classmethod
     def make(cls, name: str, **kwargs) -> AbstractSimpleConsensus:
@@ -17,10 +25,9 @@ class Factory:
 
         """
         try:
-            return cls.algorithms[name](**kwargs)
+            return cls._algorithms[name](**kwargs)
         except KeyError:
-            raise KeyError("{} algorithm is not registered. "
-                           "Available options are {}.".format(name, list(cls.algorithms.keys())))
+            raise KeyError(cls._msg_exception(name, options=True))
 
     @classmethod
     def get_consensus_algorithm(cls, name: str) -> Type[AbstractSimpleConsensus]:
@@ -31,10 +38,9 @@ class Factory:
 
         """
         try:
-            return cls.algorithms[name]
+            return cls._algorithms[name]
         except KeyError:
-            raise KeyError("{} algorithm is not registered. "
-                           "Available options are {}.".format(name, list(cls.algorithms.keys())))
+            raise KeyError(cls._msg_exception(name, options=True))
 
     @classmethod
     def register_consensus_algorithm(cls, algorithm: AbstractSimpleConsensus) -> None:
@@ -46,7 +52,7 @@ class Factory:
         """
         if not issubclass(algorithm, AbstractSimpleConsensus):
             raise ValueError(f"{str(algorithm)} is not a 'AbstractConsensus' subclass.")
-        cls.algorithms[algorithm.name] = algorithm
+        cls._algorithms[algorithm.name] = algorithm
         return None
 
     @classmethod
@@ -58,10 +64,15 @@ class Factory:
 
         """
         try:
-            del cls.algorithms[name]
+            del cls._algorithms[name]
         except KeyError:
-            raise KeyError(f"{name} algorithm is not registered.")
+            raise KeyError(cls._msg_exception(name, options=False))
         return None
+
+    @classmethod
+    def list_registered_algorithms(cls) -> List[str]:
+        """Return the list of registered algorithm names"""
+        return list(cls._algorithms.keys())
 
 
 Factory.register_consensus_algorithm(simple.MajorityVoting)

@@ -21,6 +21,8 @@ def test_all_factory_methods():
     assert Factory.get_consensus_algorithm(DummyConsensus.name) == DummyConsensus
     with pytest.raises(KeyError):
         Factory.get_consensus_algorithm(NotAnAbstractSimpleConsensus.name)
+    # List
+    assert DummyConsensus.name in Factory.list_registered_algorithms()
     # Make
     assert isinstance(Factory.make(DummyConsensus.name), DummyConsensus)
     with pytest.raises(KeyError):
