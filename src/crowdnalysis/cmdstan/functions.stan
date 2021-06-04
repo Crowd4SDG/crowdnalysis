@@ -12,9 +12,10 @@ real jsd(vector p, vector q) {
 
 vector[] log_transpose(vector[] m) {
     int k = size(m);
-    vector[k] log_m_t[k];
+    int l = size(m[1]);
+    vector[k] log_m_t[l];
     for (_real in 1:k)
-        for (_emitted in 1:k)
+        for (_emitted in 1:l)
             log_m_t[_emitted,_real] = log(m[_real,_emitted]);
     return log_m_t;
 }
@@ -30,13 +31,17 @@ vector[] bounded_log_transpose(vector[] m) {
 
 vector[] multinomial_log_p_t_C(vector tau, vector[] pi, int t, int[] t_A, int[] ann) {
     int k = size(tau);
+    int l = size(pi[1]);
     //int t = size(log_emission_t);
     int a = size(t_A);
 
+    print("l=",l);
+    print("k=",k);
     // Make the log and transpose the emission matrix
-    vector[k] log_emission_t[k];
+    vector[k] log_emission_t[l];
 
     log_emission_t = log_transpose(pi);
+    print("LogET", log_emission_t);
 
     vector[k] log_p_t_C[t];
     // Initialize with the prior

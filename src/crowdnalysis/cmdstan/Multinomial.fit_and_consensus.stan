@@ -7,17 +7,18 @@ data {
   int<lower=1> t; //number of tasks
   int<lower=1> a; //number of annotations
   
-  int<lower=2> k; //number of classes
+  int<lower=2> k; // number of classes
+  int<lower=2> l; // number of labels
   int<lower=1,upper=t> t_A[a]; // the item the n-th annotation belongs to
   int<lower=1,upper=w> w_A[a]; // the annotator which produced the n-th annotation
-  int<lower=1,upper=k> ann[a]; // the annotation
+  int<lower=1,upper=l> ann[a]; // the annotation
   vector[k] tau_prior;
-  vector[k] pi_prior[k];
+  vector[l] pi_prior[k];
 }
 
 parameters {
   simplex[k] tau;
-  simplex[k] pi[k];
+  simplex[l] pi[k];
 }
 
 transformed parameters {
@@ -25,6 +26,7 @@ transformed parameters {
   vector[k] log_p_t_C[t];
   vector[k] t_C[t]; //the true class distribution of each item
 
+  print("a");
   log_p_t_C = multinomial_log_p_t_C(tau, pi, t, t_A, ann);
 
   // Compute the probabilities from the logs
