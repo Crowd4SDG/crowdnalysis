@@ -272,7 +272,7 @@ class StanMultinomialEtaOptimizeConsensus(StanMultinomialOptimizeConsensus):
     def map_data_to_prior(self, k, l, ann, classes, **kwargs):
         tau_prior_ = self.tau_prior(ann, k, classes, alpha=5.)
         min_pi_prior_ = np.zeros((k, l - 1))
-        max_pi_prior_ = np.ones((k, l - 1)) * 5
+        max_pi_prior_ = np.ones((k, l - 1)) * 10
         return {'tau_prior': tau_prior_,
                 'min_pi_prior': min_pi_prior_,
                 'max_pi_prior': max_pi_prior_}
@@ -363,7 +363,7 @@ class StanDSEtaOptimizeConsensus(StanDSOptimizeConsensus):
     def map_data_to_prior(self, k, ann, **kwargs):
         tau_prior_ = self.tau_prior(ann, k, 5.)
         min_pi_prior_ = np.zeros((k, k - 1))
-        max_pi_prior_ = np.ones((k, k - 1)) * 5
+        max_pi_prior_ = np.ones((k, k - 1)) * 10
 
         return {'tau_prior': tau_prior_,
                 'min_pi_prior': min_pi_prior_,

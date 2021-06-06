@@ -24,7 +24,7 @@ data {
 }
 
 transformed data {
-  int dst[k,k-1];
+  int dst[k,l-1];
   dst = compute_movements(l, classes);
   vector[k] sum_t_C = rep_vector(0,k);
 

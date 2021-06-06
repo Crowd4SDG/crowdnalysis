@@ -23,7 +23,7 @@ data {
 }
 
 transformed data {
-  int dst[k,k-1];
+  int dst[k,l-1];
   dst = compute_movements(l, classes);
 }
 
@@ -54,7 +54,7 @@ transformed parameters {
 
 model {
 
-  // Prior over pi
+  // Prior over eta
   for(_k in 1:k) {
     eta[_k] ~ uniform(min_pi_prior[_k], max_pi_prior[_k]);
   }

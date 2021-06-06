@@ -1,5 +1,6 @@
 functions {
     #include "functions.stan"
+    #include "dirichlet_alternative.stan"
 }
 
 
@@ -9,29 +10,32 @@ data {
   int<lower=1> a; //number of annotations
   
   int<lower=2> k; //number of classes
-  int<lower=2> l; //number of classes
+  int<lower=2> l; //number of labels
+  int<lower=1,upper=l> classes[k]; // classes[i] is the label corresponding to the i-th class
+
   int<lower=1,upper=t> t_A[a]; // the item the n-th annotation belongs to
   int<lower=1,upper=w> w_A[a]; // the annotator which produced the n-th annotation
   int<lower=1,upper=l> ann[a]; // the annotation
+
   vector[k] tau_prior;
-  vector[k-1] min_pi_prior[k];
-  vector[k-1] max_pi_prior[k];
+  vector[l-1] min_pi_prior[k];
+  vector[l-1] max_pi_prior[k];
 }
 
 transformed data {
-  int dst[k,k-1];
-  dst = compute_movements(k);
+  int dst[k,l-1];
+  dst = compute_movements(l, classes);
 }
 
 parameters {
   simplex[k] tau;
-  vector<lower=0>[k-1] eta[k];
-  simplex[k] pi[w,k];
+  vector<lower=0>[l-1] eta[k];
+  simplex[l] pi[w,k];
 }
 
 transformed parameters {
-  vector[k] pi_h[k];
-  pi_h = softmax_diag(eta, dst);
+  simplex[l] pi_h[k];
+  pi_h = softmax_diag(eta, classes, dst);
   print("hierarchical_pi", pi_h);
 
   // log_p_t_C[_t][_k] is the log of the probability that t_C=_k for task _t 
@@ -46,12 +50,17 @@ transformed parameters {
 
 
 model {
+  // Prior over eta
+  for(_k in 1:k) {
+    eta[_k] ~ uniform(min_pi_prior[_k], max_pi_prior[_k]);
+  }
 
-  // Prior over pi
+  // Prior over pi given pi_h
   for (_w in 1:w) {
     for(_k in 1:k) {
+      pi[_w,_k] ~ dirichlet(pi_h[_k]+1)
       //target += -square_distance(pi_h[_k] , pi[_w,_k]);
-      target += -5*jsd(pi_h[_k] , pi[_w,_k]);
+      //target += -5*jsd(pi_h[_k] , pi[_w,_k]);
     }
   }
   
