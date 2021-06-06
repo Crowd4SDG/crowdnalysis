@@ -9,9 +9,10 @@ data {
   int<lower=1> a; //number of annotations
   
   int<lower=2> k; //number of classes
+  int<lower=2> l; //number of classes
   int<lower=1,upper=t> t_A[a]; // the item the n-th annotation belongs to
   int<lower=1,upper=w> w_A[a]; // the annotator which produced the n-th annotation
-  int<lower=1,upper=k> ann[a]; // the annotation
+  int<lower=1,upper=l> ann[a]; // the annotation
   vector[k] tau_prior;
   vector[k-1] min_pi_prior[k];
   vector[k-1] max_pi_prior[k];

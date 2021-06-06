@@ -42,7 +42,7 @@ model{
   target += dot_product(sum_t_C, log(tau));
   {
         // Make the log and transpose the emission matrix
-        vector [k] log_emission_t[k];
+        vector [k] log_emission_t[l];
 
         log_emission_t = log_transpose(pi);
 

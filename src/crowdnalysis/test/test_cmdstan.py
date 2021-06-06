@@ -2,7 +2,7 @@ import numpy as np
 
 from .. import log
 from .common import SampleForTest, BaseTestGenerativeConsensusModel
-from ..cmdstan import StanMultinomialOptimizeConsensus
+from ..cmdstan import StanMultinomialOptimizeConsensus, StanMultinomialEtaOptimizeConsensus
 
 
 def easy_sample() -> SampleForTest:
@@ -35,6 +35,9 @@ def more_labels_than_classes_sample() -> SampleForTest:
 
 class TestStanMultinomialOptimizeConsensus(BaseTestGenerativeConsensusModel):
     model_cls = StanMultinomialOptimizeConsensus
-    #sampling_funcs = [easy_sample, sample_non_finite_gradient]
-    sampling_funcs = [more_labels_than_classes_sample]
+    sampling_funcs = [easy_sample, sample_non_finite_gradient, more_labels_than_classes_sample]
+
+class TestStanMultinomialEtaOptimizeConsensus(BaseTestGenerativeConsensusModel):
+    model_cls = StanMultinomialEtaOptimizeConsensus
+    sampling_funcs = [easy_sample, sample_non_finite_gradient, more_labels_than_classes_sample]
 

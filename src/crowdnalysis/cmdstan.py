@@ -71,11 +71,12 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
                      'a': dcp.n_annotations,
                      'k': len(dcp.classes),
                      'l': dcp.n_labels,
-                     'classes': dcp.classes,
+                     'classes': (np.array(dcp.classes) + 1),
                      't_A': (dcp.t_A + 1),
                      'w_A': (dcp.w_A + 1),
                      'ann': (dcp.f_A + 1).flatten()}
         prior = self.map_data_to_prior(**stan_data, **kwargs)
+        print(prior)
         stan_data.update(prior)
         return stan_data
 
@@ -179,17 +180,21 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
         tp = np.ones(k)
         for i, x in enumerate(unique):
             if x in classes:
-                tp[classes.index(x)] += counts[i]
+                tp[np.where(classes==x)[0]-1] += counts[i]
         tp /= np.sum(tp)
         return tp
 
-    def tau_prior(self, ann, k, classes, alpha=5., beta=5.):
+    def tau_prior(self, ann, k, classes, alpha=5, beta=5):
+        return alpha * self.tau_estimate(ann, k, classes) + beta
+
+    def tau_init(self, ann, k, classes, alpha=0.99):
+        beta = (1 - alpha) / k
         return alpha * self.tau_estimate(ann, k, classes) + beta
 
     def pi_prior(self, k, l, classes, alpha=1., beta=10):
         labels_which_are_classes = np.zeros((k, l))
         for k_, l_ in enumerate(classes):
-            labels_which_are_classes[k_, l_] = 1.
+            labels_which_are_classes[k_, l_-1] = 1.
         return np.ones((k, l)) * alpha + labels_which_are_classes * beta
 
     def map_data_to_prior(self, k, l, classes, ann, **kwargs):
@@ -202,7 +207,7 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
 
     def map_data_to_inits(self, ann, k, l, classes, **kwargs):
         pi_prior_ = self.pi_prior(k, l, classes)
-        return {'tau': self.tau_estimate(ann, k, classes),
+        return {'tau': self.tau_init(ann, k, classes),
                 'pi': (pi_prior_ / np.sum(pi_prior_[0]))}
 
     def map_data_to_args(self, **kwargs):
@@ -256,26 +261,30 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
 class StanMultinomialEtaOptimizeConsensus(StanMultinomialOptimizeConsensus):
     name = "StanMultinomialEtaOptimize"
 
-    @dataclass
-    class Parameters(AbstractStanOptimizeConsensus.Parameters):
-        tau: np.ndarray = np.array([0.5, 0.5])
-        eta: np.ndarray = np.array([[0.9], [0.8]])
+    #@dataclass
+    #class Parameters(AbstractStanOptimizeConsensus.Parameters):
+    #    tau: np.ndarray = np.array([0.5, 0.5])
+    #    eta: np.ndarray = np.array([[0.9], [0.8]])
 
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "MultinomialEta")
 
-    def map_data_to_prior(self, k, ann, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, alpha=5.)
-        min_pi_prior_ = np.zeros((k, k - 1))
-        max_pi_prior_ = np.ones((k, k - 1)) * 5
+    def map_data_to_prior(self, k, l, ann, classes, **kwargs):
+        tau_prior_ = self.tau_prior(ann, k, classes, alpha=5.)
+        min_pi_prior_ = np.zeros((k, l - 1))
+        max_pi_prior_ = np.ones((k, l - 1)) * 5
         return {'tau_prior': tau_prior_,
                 'min_pi_prior': min_pi_prior_,
                 'max_pi_prior': max_pi_prior_}
 
-    def map_data_to_inits(self, ann, k, **kwargs):
-        return {'tau': self.tau_prior(ann, k, alpha=1.),
-                'eta': np.ones((k, k - 1))}
+    def map_data_to_inits(self, ann, k, l, classes, **kwargs):
 
+        return {'tau': self.tau_init(ann, k, classes),
+                'eta': np.ones((k, l - 1))}
+
+    def compute_consensus_model(self):
+        return CmdStanModel(stan_file=resource_filename(StanMultinomialOptimizeConsensus().model_name
+                                                        + ".consensus.stan"))
     # def map_data_to_args(self):
     #    #args = {"iter": 2000}
     #    return {'algorithm': 'LBFGS',

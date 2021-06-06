@@ -121,28 +121,6 @@ vector[] ds_log_p_t_C(vector tau, vector[,] pi, int t, int[] t_A, int[] w_A, int
     return log_p_t_C;
 }
 
-int [,] compute_movements(int k) {
-    int dst[k,k-1];
-    for (_k in 1:k) {
-        for (_i in 1:k-1) {
-            dst[_k][_i] = _i + (_i>=_k);
-        }
-    }
-    // print(dst);
-    return dst;
-}
-
-vector[] softmax_diag(vector[] eta, int[,] dst) {
-    int k = size(eta);
-    vector[k] pi[k];
-    // print("eta",eta);
-    for (_k in 1:k) {
-        pi[_k][dst[_k]] = -eta[_k];
-        pi[_k][_k] = 0.;
-        pi[_k] = softmax(to_vector(pi[_k]));
-    }
-    return pi;
-}
 
 //matrix log_transpose_m( matrix m) {
 //   int k = size(m);
