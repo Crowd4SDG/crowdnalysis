@@ -109,7 +109,7 @@ def html_description(consensus: np.ndarray, data: Data, question: str, picture_f
                         label_header.add_raw_string(" (<span style='color:{c}'>{n}</span> warning{s})".format(
                             c=FRAME_COLOR, n=str(n_warn), s="s" if n_warn > 1 else ""))
             # Filtered tasks
-            if len(filtered_task_indices):
+            if filtered_task_indices and len(filtered_task_indices):
                 label_id = "label_filtered"
                 body.add(tags.h2("Tasks without annotations ({}):".format(len(filtered_task_indices)), id=label_id))
                 filtered_task_picture_links = data.get_field(filtered_task_indices, picture_field, unique=True)
