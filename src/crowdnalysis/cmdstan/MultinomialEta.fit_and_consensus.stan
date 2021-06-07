@@ -56,7 +56,8 @@ model {
 
   // Prior over eta
   for(_k in 1:k) {
-    eta[_k] ~ uniform(min_pi_prior[_k], max_pi_prior[_k]);
+    eta[_k] ~ gamma(1.01, 0.1);  // TODO (20210607, OM): Think it over
+    //  eta[_k] ~ uniform(min_pi_prior[_k], max_pi_prior[_k]);
   }
   
   // Prior over tau
