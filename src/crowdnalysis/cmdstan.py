@@ -76,7 +76,7 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
                      'w_A': (dcp.w_A + 1),
                      'ann': (dcp.f_A + 1).flatten()}
         prior = self.map_data_to_prior(**stan_data, **kwargs)
-        print(prior)
+        log.debug(prior)
         stan_data.update(prior)
         return stan_data
 
