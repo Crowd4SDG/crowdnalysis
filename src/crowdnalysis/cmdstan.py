@@ -261,10 +261,11 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
 class StanMultinomialEtaOptimizeConsensus(StanMultinomialOptimizeConsensus):
     name = "StanMultinomialEtaOptimize"
 
-    #@dataclass
-    #class Parameters(AbstractStanOptimizeConsensus.Parameters):
-    #    tau: np.ndarray = np.array([0.5, 0.5])
-    #    eta: np.ndarray = np.array([[0.9], [0.8]])
+    @dataclass
+    class Parameters(AbstractStanOptimizeConsensus.Parameters):
+        tau: np.ndarray = np.array([0.5, 0.5])
+        eta: np.ndarray = np.array([[0.9], [0.8]])
+        pi: np.ndarray = np.array([[0.9, 0.1], [0.2, 0.8]])
 
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "MultinomialEta")
