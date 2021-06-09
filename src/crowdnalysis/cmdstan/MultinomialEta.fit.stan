@@ -18,8 +18,8 @@ data {
   int<lower=1,upper=l> ann[a]; // the annotation
 
   vector[k] tau_prior;
-  vector[l-1] min_pi_prior[k];
-  vector[l-1] max_pi_prior[k];
+  vector[l-1] eta_alpha_prior[k];
+  vector[l-1] eta_beta_prior[k];
   vector[k] t_C[t];
 }
 
@@ -48,7 +48,7 @@ transformed parameters {
 model {
   // Prior over eta
   for(_k in 1:k) {
-    eta[_k] ~ uniform(min_pi_prior[_k], max_pi_prior[_k]);
+    eta[_k] ~ gamma(eta_alpha_prior[_k], eta_beta_prior[_k]);
   }
 
   target += dot_product(sum_t_C, log(tau));

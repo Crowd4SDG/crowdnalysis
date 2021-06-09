@@ -128,6 +128,7 @@ class BaseTestGenerativeConsensusModel(BaseTestSimpleConsensusModel):
         dict_parameters_learned = dataclasses.asdict(parameters_learned)
         dict_parameters_ref = dataclasses.asdict(parameters_ref)
         for p in dict_parameters_ref.keys():
+            # print(p,dict_parameters_learned[p],dict_parameters_ref[p])
             log.debug("Distance between learned {p} and reference {p}: {d:f}".format(
                 p=p, d=distance(dict_parameters_learned[p], dict_parameters_ref[p])))
             assert close(dict_parameters_learned[p], dict_parameters_ref[p])

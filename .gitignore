@@ -4,6 +4,8 @@ src/crowdnalysis/cmdstan/*fit
 src/crowdnalysis/cmdstan/*sample_annotations
 src/crowdnalysis/cmdstan/*sample_tasks
 src/crowdnalysis/cmdstan/*hpp
+*stdout.txt
+*.csv
 nb/*stdout.txt
 nb/*.csv
 
