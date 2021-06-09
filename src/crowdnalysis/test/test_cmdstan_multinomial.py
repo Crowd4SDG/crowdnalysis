@@ -2,7 +2,7 @@ import numpy as np
 
 from .. import log
 from .common import SampleForTest, BaseTestGenerativeConsensusModel
-from ..cmdstan import StanMultinomialOptimizeConsensus, StanMultinomialEtaOptimizeConsensus
+from ..cmdstan.multinomial import StanMultinomialOptimizeConsensus, StanMultinomialEtaOptimizeConsensus
 
 
 def easy_sample() -> SampleForTest:

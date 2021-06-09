@@ -1,8 +1,10 @@
 from typing import List, Type
 
-from . import cmdstan, dawid_skene, simple
-from .consensus import AbstractSimpleConsensus
 
+from . import dawid_skene, simple
+from .consensus import AbstractSimpleConsensus
+from .cmdstan import multinomial as sm
+from .cmdstan import dawid_skene as sds
 
 class Factory:
     """Factory class for consensus algorithms"""
@@ -78,8 +80,8 @@ class Factory:
 Factory.register_consensus_algorithm(simple.MajorityVoting)
 Factory.register_consensus_algorithm(simple.Probabilistic)
 Factory.register_consensus_algorithm(dawid_skene.DawidSkene)
-Factory.register_consensus_algorithm(cmdstan.StanMultinomialOptimizeConsensus)
-Factory.register_consensus_algorithm(cmdstan.StanMultinomialEtaOptimizeConsensus)
-Factory.register_consensus_algorithm(cmdstan.StanDSOptimizeConsensus)
-Factory.register_consensus_algorithm(cmdstan.StanDSEtaOptimizeConsensus)
-Factory.register_consensus_algorithm(cmdstan.StanDSEtaHOptimizeConsensus)
+Factory.register_consensus_algorithm(sm.StanMultinomialOptimizeConsensus)
+Factory.register_consensus_algorithm(sm.StanMultinomialEtaOptimizeConsensus)
+Factory.register_consensus_algorithm(sds.StanDSOptimizeConsensus)
+Factory.register_consensus_algorithm(sds.StanDSEtaOptimizeConsensus)
+Factory.register_consensus_algorithm(sds.StanDSEtaHOptimizeConsensus)
