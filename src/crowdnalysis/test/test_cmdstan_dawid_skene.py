@@ -2,7 +2,7 @@ import numpy as np
 
 from .. import log
 from .common import SampleForTest, BaseTestGenerativeConsensusModel
-from ..cmdstan.dawid_skene import StanDSOptimizeConsensus, StanDSEtaOptimizeConsensus, StanDSEtaHOptimizeConsensus
+from ..cmdstan.dawid_skene import StanDSOptimizeConsensus, StanDSEtaHOptimizeConsensus
 
 from .test_dawid_skene import sample
 
@@ -14,7 +14,7 @@ class TestStanDSOptimizeConsensus(BaseTestGenerativeConsensusModel):
 #    model_cls = StanDSEtaOptimizeConsensus
 #    sampling_funcs = [sample]
 
-#class TestStanDSEtaHOptimizeConsensus(BaseTestGenerativeConsensusModel):
-#    model_cls = StanDSEtaHOptimizeConsensus
-#    sampling_funcs = [sample]
+class TestStanDSEtaHOptimizeConsensus(BaseTestGenerativeConsensusModel):
+    model_cls = StanDSEtaHOptimizeConsensus
+    sampling_funcs = [sample]
 

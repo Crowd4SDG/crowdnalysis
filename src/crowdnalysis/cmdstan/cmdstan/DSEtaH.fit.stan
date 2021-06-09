@@ -21,11 +21,16 @@ data {
   vector[k] tau_prior;
   vector[l-1] eta_alpha_prior[k];
   vector[l-1] eta_beta_prior[k];
+  vector[k] t_C[t];
 }
 
 transformed data {
   int dst[k,l-1];
   dst = compute_movements(l, classes);
+  vector[k] sum_t_C = rep_vector(0,k);
+
+  for (_t in 1:t)
+    sum_t_C += t_C[_t];
 }
 
 parameters {
@@ -37,16 +42,6 @@ parameters {
 transformed parameters {
   simplex[l] pi_h[k];
   pi_h = softmax_diag(eta, classes, dst);
-  print("hierarchical_pi", pi_h);
-
-  // log_p_t_C[_t][_k] is the log of the probability that t_C=_k for task _t 
-  vector[k] log_p_t_C[t];
-  log_p_t_C = ds_log_p_t_C(tau, pi, t, t_A, w_A, ann);
-
-  // Compute the probabilities from the logs (maybe this should move to generated quantities)
-  vector[k] t_C[t]; //the true class distribution of each item
-  for(_t in 1:t)
-    t_C[_t] = softmax(log_p_t_C[_t]);
 }
 
 
@@ -60,17 +55,22 @@ model {
   for (_w in 1:w) {
     for(_k in 1:k) {
       pi[_w,_k] ~ dirichlet(pi_h[_k] + 1);
-      //target += -square_distance(pi_h[_k] , pi[_w,_k]);
-      //target += -5*jsd(pi_h[_k] , pi[_w,_k]);
     }
   }
   
   // Prior over tau
   tau ~ dirichlet(tau_prior);
 
-  // Observation model
+  target += dot_product(sum_t_C, log(tau));
+  {
+        // Make the log and transpose the emission matrix
+        vector[k] log_emission_t[w,l];
 
-  // Summing over hidden var t_C
-  for (_t in 1:t)
-     target += log_sum_exp(log_p_t_C[_t]);
+        log_emission_t = ds_log_transpose(pi);
+
+        // Probability of each annotation
+
+        for (_a in 1:a)
+          target += dot_product(log_emission_t[w_A[_a],ann[_a]] , t_C[t_A[_a]]);
+  }
 }
