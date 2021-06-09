@@ -1,5 +1,6 @@
 functions {
     #include "functions.stan"
+    #include "multinomial.stan"
 }
 
 data {

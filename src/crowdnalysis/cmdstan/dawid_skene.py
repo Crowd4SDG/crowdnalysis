@@ -15,17 +15,17 @@ class StanDSOptimizeConsensus(StanMultinomialOptimizeConsensus):
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "DS")
 
-    def map_data_to_prior(self, k, ann, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, 5.)
-        pi_prior_ = self.pi_prior(k)
+    def map_data_to_prior(self, k, l, classes, ann, **kwargs):
+        tau_prior_ = self.tau_prior(ann, k, classes, 5.)
+        pi_prior_ = self.pi_prior(k, l, classes)
 
         return {"tau_prior": tau_prior_,
                 "pi_prior": pi_prior_}
 
-    def map_data_to_inits(self, ann, k, w, **kwargs):
-        pi_prior_ = self.pi_prior(k)
-        pi_param_ = np.broadcast_to(pi_prior_ / np.sum(pi_prior_[0]), (w, k, k))
-        return {'tau': self.tau_prior(ann, k, alpha=1.),
+    def map_data_to_inits(self, ann, k, w, l, classes, **kwargs):
+        pi_prior_ = self.pi_prior(k, l, classes)
+        pi_param_ = np.broadcast_to(pi_prior_ / np.sum(pi_prior_[0]), (w, k, l))
+        return {'tau': self.tau_init(ann, k, classes),
                 'pi': pi_param_}
 
     # TODO: Implement sampling from this model

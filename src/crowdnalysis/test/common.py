@@ -61,6 +61,7 @@ class BaseTestSimpleConsensusModel:
     @classmethod
     def _test_fit_and_compute_consensus(cls, sample: SampleForTest):
         model = cls.model_cls()
+        print(sample.problem)
         consensus, parameters_learned = model.fit_and_compute_consensus(sample.problem)
         # Assert consensus
         if cls.model_cls.__bases__[0] == AbstractSimpleConsensus:  # If this is only a simple consensus model
@@ -72,6 +73,7 @@ class BaseTestSimpleConsensusModel:
             dict_parameters_learned = dataclasses.asdict(parameters_learned)
             dict_sample_parameters = dataclasses.asdict(sample.parameters)
             for p in dict_sample_parameters.keys():
+                print(p, dict_sample_parameters[p], dict_parameters_learned[p])
                 log.debug("Distance between learned {p} and real {p}: {d:f}".format(
                     p=p, d=distance(dict_parameters_learned[p], dict_sample_parameters[p])))
                 assert close(dict_parameters_learned[p], dict_sample_parameters[p])
@@ -128,7 +130,7 @@ class BaseTestGenerativeConsensusModel(BaseTestSimpleConsensusModel):
         dict_parameters_learned = dataclasses.asdict(parameters_learned)
         dict_parameters_ref = dataclasses.asdict(parameters_ref)
         for p in dict_parameters_ref.keys():
-            # print(p,dict_parameters_learned[p],dict_parameters_ref[p])
+            print(p, dict_parameters_learned[p], dict_parameters_ref[p])
             log.debug("Distance between learned {p} and reference {p}: {d:f}".format(
                 p=p, d=distance(dict_parameters_learned[p], dict_parameters_ref[p])))
             assert close(dict_parameters_learned[p], dict_parameters_ref[p])

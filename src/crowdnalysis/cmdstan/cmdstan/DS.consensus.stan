@@ -16,11 +16,6 @@ data {
   int<lower=1,upper=w> w_A[a]; // the annotator which produced the n-th annotation
   int<lower=1,upper=l> ann[a]; // the annotation
 
-  vector[k] tau_prior;
-  vector[l] pi_prior[k];
-}
-
-parameters {
   simplex[k] tau;
   simplex[l] pi[w,k];
 }
@@ -41,18 +36,6 @@ transformed parameters {
 
 
 model {
-
-  // Prior over pi
-  for(_w in 1:w) {
-    for(_k in 1:k) {
-      pi[_w,_k] ~ dirichlet(pi_prior[_k]);
-    }
-  }
-  
-  // Prior over tau
-  tau ~ dirichlet(tau_prior);
-
-  // Observation model
 
   // Summing over hidden var t_C
   for (_t in 1:t)

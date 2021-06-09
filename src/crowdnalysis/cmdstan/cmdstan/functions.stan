@@ -29,97 +29,45 @@ vector[] bounded_log_transpose(vector[] m) {
     return log_m_t;
 }
 
-vector[] multinomial_log_p_t_C(vector tau, vector[] pi, int t, int[] t_A, int[] ann) {
-    int k = size(tau);
-    int l = size(pi[1]);
-    //int t = size(log_emission_t);
-    int a = size(t_A);
-
-    print("l=",l);
-    print("k=",k);
-    // Make the log and transpose the emission matrix
-    vector[k] log_emission_t[l];
-
-    log_emission_t = log_transpose(pi);
-    print("LogET", log_emission_t);
-
-    vector[k] log_p_t_C[t];
-    // Initialize with the prior
-
-    log_p_t_C = rep_array(log(tau), t);
-
-    // Update each task with the information contributed by its annotations
-
-    for (_a in 1:a)
-        log_p_t_C[t_A[_a]] += log_emission_t[ann[_a]];
-
-    return log_p_t_C;
-}
 
 
-vector soften(vector v, real eps) {
-    int size_v = size(v);
-    vector[size_v] v_s = v;
-    v_s += eps;
-    v_s /= sum(v_s);
-    return v_s;
-}
+//vector soften(vector v, real eps) {
+//    int size_v = size(v);
+//    vector[size_v] v_s = v;
+//    v_s += eps;
+//    v_s /= sum(v_s);
+//    return v_s;
+//}
 
-vector[] bounded_multinomial_log_p_t_C(vector tau, vector[] pi, int t, int[] t_A, int[] ann) {
-    int k = size(tau);
-    int a = size(t_A);
-
-    //vector[k] soft_tau = soften(tau, 0.01);
-    //print("Soft tau:", soft_tau);
-    //vector[k] soft_pi[k];
-    //for (_k in 1:k) {
-    //    soft_pi[_k] = soften(pi[_k], 0.1);
-    //}
-    //print("Soft pi:", soft_pi);
-
-    // Make the log and transpose the emission matrix
-    vector[k] log_emission_t[k];
-
-    log_emission_t = log_transpose(pi);
-
-    vector[k] log_p_t_C[t];
-    // Initialize with the prior
-
-    log_p_t_C = rep_array(log(tau), t);
-
-    // Update each task with the information contributed by its annotations
-
-    for (_a in 1:a)
-        log_p_t_C[t_A[_a]] += log_emission_t[ann[_a]];
-
-    return log_p_t_C;
-}
-
-
-vector[] ds_log_p_t_C(vector tau, vector[,] pi, int t, int[] t_A, int[] w_A, int[] ann) {
-    int k = size(tau);
-    int w = size(pi);
-    int a = size(t_A);
-
-    // Make the log and transpose the emission matrix
-    vector[k] log_emission_t[w,k];
-    for (_w in 1:w) {
-        log_emission_t[_w] = log_transpose(pi[_w]);
-    }
-
-    vector[k] log_p_t_C[t];
-
-    // Initialize with the prior
-
-    log_p_t_C = rep_array(log(tau), t);
-
-    // Update each task with the information contributed by its annotations
-
-    for (_a in 1:a)
-        log_p_t_C[t_A[_a]] += log_emission_t[w_A[_a]][ann[_a]];
-
-    return log_p_t_C;
-}
+//vector[] bounded_multinomial_log_p_t_C(vector tau, vector[] pi, int t, int[] t_A, int[] ann) {
+//    int k = size(tau);
+//    int a = size(t_A);
+//
+//    //vector[k] soft_tau = soften(tau, 0.01);
+//    //print("Soft tau:", soft_tau);
+//    //vector[k] soft_pi[k];
+//    //for (_k in 1:k) {
+//    //    soft_pi[_k] = soften(pi[_k], 0.1);
+//    //}
+//    //print("Soft pi:", soft_pi);
+//
+//    // Make the log and transpose the emission matrix
+//    vector[k] log_emission_t[k];
+//
+//    log_emission_t = log_transpose(pi);
+//
+//    vector[k] log_p_t_C[t];
+//    // Initialize with the prior
+//
+//    log_p_t_C = rep_array(log(tau), t);
+//
+//    // Update each task with the information contributed by its annotations
+//
+//    for (_a in 1:a)
+//        log_p_t_C[t_A[_a]] += log_emission_t[ann[_a]];
+//
+//    return log_p_t_C;
+//}
 
 
 //matrix log_transpose_m( matrix m) {
