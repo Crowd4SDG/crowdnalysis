@@ -45,8 +45,9 @@ def _get_var_dict(results: CmdStanMLE):
     return var_dict
 
 
-with irpath(__package__, __name__.split('.')[-1]) as path_:
-    resources_path = path_
+with irpath(__package__, "__init__.py") as path_:
+    resource_dir = __name__.split('.')[-1]  # directory name for the *.stan files
+    resources_path = path_.parents[0] / resource_dir
 
 
 def resource_filename(filename):
@@ -153,4 +154,3 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
 
     def sample_annotations_model(self):
         return CmdStanModel(stan_file=resource_filename(self.model_name + ".sample_annotations.stan"))
-
