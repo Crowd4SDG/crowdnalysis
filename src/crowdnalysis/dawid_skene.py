@@ -4,6 +4,7 @@ from . import log
 
 from .consensus import GenerativeAbstractConsensus, DiscreteConsensusProblem
 from .simple import Probabilistic
+from .factory import Factory
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -145,3 +146,5 @@ class DawidSkene(GenerativeAbstractConsensus):
         log_T -= logSumT[:, np.newaxis]
         T = np.exp(log_T)
         return T
+
+Factory.register_consensus_algorithm(DawidSkene)

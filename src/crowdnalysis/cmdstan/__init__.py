@@ -62,7 +62,9 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
 
     def map_data_to_model(self, dcp: DiscreteConsensusProblem, **kwargs):
         d = self.map_data_to_data(dcp, **kwargs)
-        return d, self.map_data_to_inits(**d, **kwargs), self.map_data_to_args(**d, **kwargs)
+        init = self.map_data_to_inits(dcp, **d, **kwargs)
+        args = self.map_data_to_args(dcp, **d, **kwargs)
+        return d, init, args
 
     def map_data_to_data(self, dcp: DiscreteConsensusProblem, **kwargs):
         stan_data = {'w': dcp.n_workers,
@@ -74,18 +76,18 @@ class AbstractStanOptimizeConsensus(GenerativeAbstractConsensus):
                      't_A': (dcp.t_A + 1),
                      'w_A': (dcp.w_A + 1),
                      'ann': (dcp.f_A + 1).flatten()}
-        prior = self.map_data_to_prior(**stan_data, **kwargs)
+        prior = self.map_data_to_prior(dcp, **stan_data, **kwargs)
         log.debug(prior)
         stan_data.update(prior)
         return stan_data
 
-    def map_data_to_prior(self, **kwargs):
+    def map_data_to_prior(self, dcp, **kwargs):
         raise NotImplementedError
 
-    def map_data_to_inits(self, **kwargs):
+    def map_data_to_inits(self, dcp,  **kwargs):
         raise NotImplementedError
 
-    def map_data_to_args(self, **kwargs):
+    def map_data_to_args(self, dcp, **kwargs):
         raise NotImplementedError
 
     # def MLE_parameters(self, results: CmdStanMLE):

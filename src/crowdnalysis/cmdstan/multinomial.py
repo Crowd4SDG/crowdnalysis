@@ -7,6 +7,8 @@ from cmdstanpy import CmdStanModel
 
 from ..consensus import GenerativeAbstractConsensus
 from dataclasses import dataclass
+from ..factory import Factory
+
 from . import AbstractStanOptimizeConsensus
 from . import resource_filename
 
@@ -29,21 +31,20 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "Multinomial")
 
-    def tau_estimate(self, ann, k, classes):
-        unique, counts = np.unique(ann, return_counts=True)
-        tp = np.ones(k)
-        for i, x in enumerate(unique):
-            if x in classes:
-                tp[np.where(classes==x)[0]-1] += counts[i]
-        tp /= np.sum(tp)
-        return tp
+    def tau_estimate(self, dcp, ann, k, classes):
+        alg = Factory.make("MajorityVoting")
+        t_C, _ = alg.fit_and_compute_consensus(dcp)
+        single_most_voted = np.argmax(t_C, axis=1)
+        unique, counts = np.unique(single_most_voted, return_counts=True)
+        # print("u, c:", unique, counts)
+        return counts / np.sum(counts)
 
-    def tau_prior(self, ann, k, classes, alpha=5., beta=5.):
-        return alpha * self.tau_estimate(ann, k, classes) + beta
+    def tau_prior(self, dcp, ann, k, classes, alpha=5., beta=5.):
+        return alpha * self.tau_estimate(dcp, ann, k, classes) + beta
 
-    def tau_init(self, ann, k, classes, alpha=0.99):
+    def tau_init(self, dcp, ann, k, classes, alpha=0.99):
         beta = (1 - alpha) / k
-        return alpha * self.tau_estimate(ann, k, classes) + beta
+        return alpha * self.tau_estimate(dcp, ann, k, classes) + beta
 
     def pi_prior(self, k, l, classes, alpha=1., beta=10):
         labels_which_are_classes = np.zeros((k, l))
@@ -51,20 +52,20 @@ class StanMultinomialOptimizeConsensus(AbstractStanOptimizeConsensus):
             labels_which_are_classes[k_, l_-1] = 1.
         return np.ones((k, l)) * alpha + labels_which_are_classes * beta
 
-    def map_data_to_prior(self, k, l, classes, ann, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, classes, alpha=5.)+5.
+    def map_data_to_prior(self, dcp, k, l, classes, ann, **kwargs):
+        tau_prior_ = self.tau_prior(dcp, ann, k, classes, alpha=5.)+5.
         #print("tp:", tau_prior_)
         pi_prior_ = self.pi_prior(k, l, classes, alpha=5, beta=5)
 
         return {"tau_prior": tau_prior_,
                 "pi_prior": pi_prior_}
 
-    def map_data_to_inits(self, ann, k, l, classes, **kwargs):
+    def map_data_to_inits(self, dcp, ann, k, l, classes, **kwargs):
         pi_prior_ = self.pi_prior(k, l, classes)
-        return {'tau': self.tau_init(ann, k, classes),
+        return {'tau': self.tau_init(dcp, ann, k, classes),
                 'pi': (pi_prior_ / np.sum(pi_prior_[0]))}
 
-    def map_data_to_args(self, **kwargs):
+    def map_data_to_args(self, dcp, **kwargs):
         # args = {"iter": 2000}
         return {'algorithm': 'LBFGS',
                 'sig_figs': 10,
@@ -124,17 +125,17 @@ class StanMultinomialEtaOptimizeConsensus(StanMultinomialOptimizeConsensus):
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "MultinomialEta")
 
-    def map_data_to_prior(self, k, l, ann, classes, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, classes, alpha=5.)
+    def map_data_to_prior(self, dcp, k, l, ann, classes, **kwargs):
+        tau_prior_ = self.tau_prior(dcp, ann, k, classes, alpha=5.)
         eta_alpha_prior_ = np.ones((k, l - 1))
         eta_beta_prior_ = np.ones((k, l - 1)) * 0.01
         return {'tau_prior': tau_prior_,
                 'eta_alpha_prior': eta_alpha_prior_,
                 'eta_beta_prior': eta_beta_prior_}
 
-    def map_data_to_inits(self, ann, k, l, classes, **kwargs):
+    def map_data_to_inits(self, dcp, ann, k, l, classes, **kwargs):
 
-        return {'tau': self.tau_init(ann, k, classes),
+        return {'tau': self.tau_init(dcp, ann, k, classes),
                 'eta': np.ones((k, l - 1))}
 
     def compute_consensus_model(self):
@@ -145,3 +146,5 @@ class StanMultinomialEtaOptimizeConsensus(StanMultinomialOptimizeConsensus):
     #    return {'algorithm': 'LBFGS',
     #            'output_dir': "."}
 
+Factory.register_consensus_algorithm(StanMultinomialOptimizeConsensus)
+Factory.register_consensus_algorithm(StanMultinomialEtaOptimizeConsensus)

@@ -2,8 +2,10 @@ import numpy as np
 
 from crowdnalysis.cmdstan import AbstractStanOptimizeConsensus, resource_filename
 from crowdnalysis.cmdstan.multinomial import StanMultinomialOptimizeConsensus, StanMultinomialEtaOptimizeConsensus
+from scipy.special import softmax
 from cmdstanpy import CmdStanModel
 from dataclasses import dataclass
+from ..factory import Factory
 
 class StanDSOptimizeConsensus(StanMultinomialOptimizeConsensus):
     name = "StanDSOptimize"
@@ -16,17 +18,19 @@ class StanDSOptimizeConsensus(StanMultinomialOptimizeConsensus):
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "DS")
 
-    def map_data_to_prior(self, k, l, classes, ann, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, classes, 5.)
+    def map_data_to_prior(self, dcp, k, l, classes, ann, **kwargs):
+        tau_prior_ = self.tau_prior(dcp, ann, k, classes, 5.)
         pi_prior_ = self.pi_prior(k, l, classes)
-
         return {"tau_prior": tau_prior_,
                 "pi_prior": pi_prior_}
 
-    def map_data_to_inits(self, ann, k, w, l, classes, **kwargs):
-        pi_prior_ = self.pi_prior(k, l, classes)
-        pi_param_ = np.broadcast_to(pi_prior_ / np.sum(pi_prior_[0]), (w, k, l))
-        return {'tau': self.tau_init(ann, k, classes),
+    def map_data_to_inits(self, dcp, ann, k, w, l, classes, **kwargs):
+        alg = Factory.make("StanMultinomialEtaOptimize")
+        t_C, params = alg.fit_and_compute_consensus(dcp)
+        tau_ = params.tau
+        multinomial_pi_ = params.pi
+        pi_param_ = np.broadcast_to(multinomial_pi_, (w, k, l))
+        return {'tau': tau_,
                 'pi': pi_param_}
 
     # TODO: Implement sampling from this model
@@ -99,28 +103,59 @@ class StanDSEtaHOptimizeConsensus(StanDSOptimizeConsensus):
     def __init__(self):
         AbstractStanOptimizeConsensus.__init__(self, "DSEtaH")
 
-    def map_data_to_prior(self, k, l, ann, classes, **kwargs):
-        tau_prior_ = self.tau_prior(ann, k, classes, alpha=5.)
+    def map_data_to_prior(self, dcp, k, l, ann, classes, **kwargs):
+        tau_prior_ = self.tau_prior(dcp, ann, k, classes, alpha=5.)
         eta_alpha_prior_ = np.ones((k, l - 1))
         eta_beta_prior_ = np.ones((k, l - 1)) * 0.01
         return {'tau_prior': tau_prior_,
                 'eta_alpha_prior': eta_alpha_prior_,
                 'eta_beta_prior': eta_beta_prior_}
 
-    def map_data_to_inits(self, ann, k, w, l, classes, **kwargs):
+    def compute_movements(self, eta, classes):
+        k, l = eta.shape
+        l += 1
+        dst = np.zeros((k,l-1), dtype=np.int16)
+        for _k in range(k):
+            for _l in range(l-1):
+                dst[_k][_l] = _l + (_l >= (classes[_k]-1));
+        return dst
+
+    def softmax_diag(self, eta, classes):
+        dst = self.compute_movements(eta, classes)
+        k, l = eta.shape
+        l += 1
+        pi = np.zeros((k, l))
+        for _k in range(k):
+            pi[_k][dst[_k]] = -eta[_k]
+            pi[_k] = softmax(pi[_k])
+        return pi
+
+    def map_data_to_inits(self, dcp, ann, k, w, l, classes, **kwargs):
+        eta = np.ones((k, l - 1))*5.
+        print("eta:", eta)
         pi_prior_ = self.pi_prior(k, l, classes)
+        print("old_pi_prior:", pi_prior_)
+        pi_prior_ = self.softmax_diag(eta, classes)
+        print("pi_prior:", pi_prior_)
         pi_param_ = np.broadcast_to(pi_prior_ / np.sum(pi_prior_[0]), (w, k, l))
-        return {'tau': self.tau_init(ann, k, classes),
-                'eta': np.ones((k, l - 1)),
+        print("param:", pi_param_)
+        ti = self.tau_init(dcp, ann, k, classes)
+        print("tau_init =", ti)
+        return {'tau': ti,
+                'eta': eta,
                 'pi': pi_param_}
 
-    def map_data_to_args(self, **kwargs):
+    def map_data_to_args(self, dcp, **kwargs):
         # args = {"iter": 2000}
         return {'algorithm': 'LBFGS',
-                'init_alpha': 0.01,
+                #'init_alpha': 0.01,
                 'sig_figs': 10,
                 'output_dir': "."}
 
     def compute_consensus_model(self):
         return CmdStanModel(stan_file=resource_filename(StanDSOptimizeConsensus().model_name
                                                         + ".consensus.stan"))
+
+Factory.register_consensus_algorithm(StanDSOptimizeConsensus)
+# Factory.register_consensus_algorithm(StanDSEtaOptimizeConsensus)
+Factory.register_consensus_algorithm(StanDSEtaHOptimizeConsensus)

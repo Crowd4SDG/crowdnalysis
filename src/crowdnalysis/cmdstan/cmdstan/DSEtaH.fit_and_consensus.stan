@@ -59,12 +59,11 @@ model {
   // Prior over pi given pi_h
   for (_w in 1:w) {
     for(_k in 1:k) {
-      pi[_w,_k] ~ dirichlet(pi_h[_k] + 1);
-      //target += -square_distance(pi_h[_k] , pi[_w,_k]);
-      //target += -5*jsd(pi_h[_k] , pi[_w,_k]);
+      pi[_w,_k] ~ dirichlet(100*pi_h[_k] + 1);
     }
   }
-  
+
+
   // Prior over tau
   tau ~ dirichlet(tau_prior);
 
@@ -73,4 +72,9 @@ model {
   // Summing over hidden var t_C
   for (_t in 1:t)
      target += log_sum_exp(log_p_t_C[_t]);
+
+  print("tau:",tau);
+  print("eta:",eta);
+  print("pi:",pi);
+  print("target:",target());
 }

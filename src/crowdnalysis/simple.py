@@ -4,7 +4,7 @@ import numpy as np
 
 from crowdnalysis.consensus import AbstractSimpleConsensus
 from crowdnalysis.problems import DiscreteConsensusProblem
-
+from .factory import Factory
 
 class Probabilistic(AbstractSimpleConsensus):
     name = "Probabilistic"
@@ -52,3 +52,6 @@ class MajorityVoting(AbstractSimpleConsensus):
     def fit_and_compute_consensus(self, dcp: DiscreteConsensusProblem, **kwargs):
         consensus, _ = self.consensus_and_single_most_voted(dcp)
         return consensus, MajorityVoting.Parameters()
+
+Factory.register_consensus_algorithm(MajorityVoting)
+Factory.register_consensus_algorithm(Probabilistic)

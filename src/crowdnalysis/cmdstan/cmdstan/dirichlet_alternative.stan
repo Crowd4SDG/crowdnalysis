@@ -26,7 +26,7 @@ vector[] softmax_diag(vector[] eta, int[] classes, int[,] dst) {
     int k = size(eta);
     int l = size(eta[1])+1;
     vector[l] pi[k];
-    print("eta",eta);
+    // print("eta",eta);
     for (_k in 1:k) {
         pi[_k][dst[_k]] = -eta[_k];
         pi[_k][classes[_k]] = 0.;
