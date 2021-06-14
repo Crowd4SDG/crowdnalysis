@@ -5,7 +5,7 @@ matplotlib
 #pyanno3
 #wxPython
 seaborn
-pystan
+#pystan
 statsmodels
 dominate
 cmdstanpy
