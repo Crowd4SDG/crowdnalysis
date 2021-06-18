@@ -1,68 +1,94 @@
 [![IIIA-CSIC](https://img.shields.io/badge/brewing%20at-IIIA--CSIC-blue)](https://iiia.csic.es)
+[![PyPI](https://img.shields.io/pypi/v/crowdnalysis)](https://pypi.org/project/crowdnalysis)
 [![codecov](https://codecov.io/gh/Crowd4SDG/crowdnalysis/branch/v2_refactoring/graph/badge.svg?token=JZ8BD8MZ9D)](https://codecov.io/gh/Crowd4SDG/crowdnalysis)
 
 # crowdnalysis
  Crowdsourcing Citizen Science projects usually require citizens to classify items (images, pdfs, songs,&#8230;) 
  into one of a finite set of categories. Once an image is classified by different citizens, the different votes 
  need to be aggregated to obtain a consensus classification. Usually this is done by selecting the most voted category. 
- *Crowdnalysis* allows Crowdsourcing Citizen Science projects to compute consensus that go beyond the selection of 
+ *crowdnalysis* allows Crowdsourcing Citizen Science projects to compute consensus that go beyond the selection of 
  the most voted category, by computing a model of quality for each of the citizen scientist involved in the project. 
  This more advanced consensus results in higher quality information for the Crowdsourcing Citizen Science project.
 
 ## Implemented consensus algorithms
-- Majority Voting
-- Probabilistic
-- Dawid-Skene
-- Dawid-Skene (`PyStan` version, [see](https://pystan.readthedocs.io/en/latest/))
 
-## How to use as a package
-- Clone the repo 
-- Add the `src` directory to `PYTHONPATH`
-- `pip install` the requirements into the virtual environment where you will use `crowdnalysis`
-- `import crowdnalysis`
+  - Majority Voting
+  - Probabilistic
+  - Multinomial
+  - Dawid-Skene
+  
+In addition to the pure Python implementations above, the following models are implemented in the 
+probabilistic programming language [Stan](https://mc-stan.org) by using the 
+`CmdStanPy` [interface](https://mc-stan.org/cmdstanpy):
+  - Multinomial
+  - Multinomial Eta
+  - Dawid-Skene
+  - Dawid-Skene Eta Hierarchical
 
+~ Eta models impose that the probability of the labels are higher for the real classes in the error-rate 
+(a.k.a. confusion) matrix.
 
-*see* `albania-analysis` [repo](https://github.com/Crowd4SDG/albania-analysis) for a sample usage 
-and its initialization script (`bin/init-local.sh`) for the above-mentioned configuration. 
+## Features
+  - Import annotation data from a `csv` file with a preprocessing option
+  - Calculate inter-rater reliability with different measures
+  - Fit selected model to annotation data and compute the consensus 
+  - Compute the consensus with a fixed pre-determined set of parameters
+  - Fit the model parameters provided that the consensus is already known
+  - Given parameters of a generative models (Multinomial, Dawid-Skene), sample annotations, tasks, 
+  and workers (i.e., annotators)
+  - Visualise the error-rate matrix for annotators 
+  - Conduct predictive analysis of the accuracy vs number of annotations for a set of models
+  - Visualise the consensus on annotated images in `HTML` format 
+  
+
+## Quick start
+
+crowdnalysis is distributed via PyPI: [https://pypi.org/project/crowdnalysis/](https://pypi.org/project/crowdnalysis/)
+
+Install as a standard Python package:
+
+`$ pip install crowdnalysis`
+
+`CmdStanPy` will be installed as a dependency, however, this package requires the installation of the 
+`CmdStan` command-line interface too. 
+This can be done via executing the `install_cmdstan` utility that comes with `CmdStanPy`.
+See the package [docs](https://mc-stan.org/cmdstanpy/installation.html) for  more information.
+
+`$ install_cmdstan`
+
+Use the package in the code:
+
+`import crowdnalysis`
+
+Check available consensus models:
+
+`print(crowdnalysis.factory.Factory.list_registered_algorithms())`
 
 ## How to run unit tests
 
-We use pytest as testing framework. Tests can be run by doing:
+We use [pytest](pytest.org) as the testing framework. Tests can be run by:
 
-`pytest src/`
+`$ pytest`
 
-If we want to get the logs of the execution, do 
+If you want to get the logs of the execution, do 
 
-`pytest src/ --log-cli-level 0`
-
-To generate a coverage report along with the test, run
-
-`pytest --cov=src/`
-
-To display the latest generated report, execute
-
-`coverage report`
+`$ pytest --log-cli-level 0`
 
 ## Logging 
 
-We use the standard `logging` library according to the rules [here](https://docs.python.org/3/howto/logging.html)
+We use the standard `logging` library according to the rules [here](https://docs.python.org/3/howto/logging.html).
 
-## Known issues
-### On Mac
-- If you are working on a 64-bit Intel platform, and you get an "Architecture not supported" error 
-during GCC c++ compilation for `PyStan`, add the following line in your `~/.bashrc`:
+## License
 
-```
-# Set architecture to avoid GCC compilation problems with relavant python packages
-export ARCHFLAGS="-arch x86_64"
-```
+This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
-- If `pystan.StanModel.sampling` method seems to run indefinitely, re-run it with the `verbose=True` parameter. 
-If you see the error `ModuleNotFoundError: No module named 'stanfit4anon_model...`, 
-insert the following lines on top of your imports 
-([hat-tip](https://discourse.mc-stan.org/t/pystan-throws-error-when-running-chains-in-parallel-n-jobs-1/17563/4)):
-  
-```
-import multiprocessing
-multiprocessing.set_start_method("fork")
-```
+## Acknowledgements
+<img src="https://europa.eu/european-union/sites/europaeu/files/docs/body/flag_yellow_low.jpg" alt="" width="40"/> 
+crowdnalysis is being developed within the <a href="https://crowd4sdg.eu/">Crowd4SDG</a> project funded by the 
+European Union’s Horizon 2020 research and innovation programme under grant agreement No. 872944. 
+
+## Reference
+For the details of the conceptual and mathematical model of crowdnalysis, see: 
+
+[1<a name="ref1"></a>] Cerquides, J.; Mülâyim, M.O.; Hernández-González, J.; Ravi Shankar, A.; Fernandez-Marquez, J.L. 
+_A Conceptual Probabilistic Framework for Annotation Aggregation of Citizen Science Data_. Mathematics 2021, 9, 875, [https://doi:10.3390/math9080875](https://doi:10.3390/math9080875)
