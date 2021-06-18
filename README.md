@@ -29,16 +29,16 @@ probabilistic programming language [Stan](https://mc-stan.org) by using the
 (a.k.a. confusion) matrix.
 
 ## Features
-  - Import annotation data from a `csv` file with a preprocessing option
+  - Import annotation data from a `CSV` file with a preprocessing option
   - Calculate inter-rater reliability with different measures
   - Fit selected model to annotation data and compute the consensus 
   - Compute the consensus with a fixed pre-determined set of parameters
   - Fit the model parameters provided that the consensus is already known
-  - Given parameters of a generative models (Multinomial, Dawid-Skene), sample annotations, tasks, 
+  - Given the parameters of a generative model (Multinomial, Dawid-Skene), sample annotations, tasks, 
   and workers (i.e., annotators)
-  - Visualise the error-rate matrix for annotators 
-  - Conduct predictive analysis of the accuracy vs number of annotations for a set of models
-  - Visualise the consensus on annotated images in `HTML` format 
+  - Visualize the error-rate matrix for annotators 
+  - Conduct predictive analysis of the accuracy vs. number of annotations for a given set of models
+  - Visualize the consensus on annotated images in `HTML` format 
   
 
 ## Quick start
@@ -91,4 +91,5 @@ European Union’s Horizon 2020 research and innovation programme under grant ag
 For the details of the conceptual and mathematical model of crowdnalysis, see: 
 
 [1<a name="ref1"></a>] Cerquides, J.; Mülâyim, M.O.; Hernández-González, J.; Ravi Shankar, A.; Fernandez-Marquez, J.L. 
-_A Conceptual Probabilistic Framework for Annotation Aggregation of Citizen Science Data_. Mathematics 2021, 9, 875, [https://doi:10.3390/math9080875](https://doi:10.3390/math9080875)
+_A Conceptual Probabilistic Framework for Annotation Aggregation of Citizen Science Data_. Mathematics 2021, 9, 875, 
+[https://doi.org/10.3390/math9080875](https://doi.org/10.3390/math9080875)
