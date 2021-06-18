@@ -41,7 +41,6 @@ setup(
     name=PACKAGE_NAME,
     version=get_version(),
     author="IIIA-CSIC",
-    # author_email="cerquide@iiia.csic.es, oguz@iiia.csic.es",
     description="Library to help analyze crowdsourcing results",
     long_description=readme(),
     long_description_content_type="text/markdown",
