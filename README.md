@@ -91,4 +91,5 @@ European Union’s Horizon 2020 research and innovation programme under grant ag
 For the details of the conceptual and mathematical model of crowdnalysis, see: 
 
 [1<a name="ref1"></a>] Cerquides, J.; Mülâyim, M.O.; Hernández-González, J.; Ravi Shankar, A.; Fernandez-Marquez, J.L. 
-_A Conceptual Probabilistic Framework for Annotation Aggregation of Citizen Science Data_. Mathematics 2021, 9, 875, [https://doi.org/10.3390/math9080875](https://doi:10.3390/math9080875)
+_A Conceptual Probabilistic Framework for Annotation Aggregation of Citizen Science Data_. Mathematics 2021, 9, 875, 
+[https://doi.org/10.3390/math9080875](https://doi.org/10.3390/math9080875)
