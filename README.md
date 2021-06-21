@@ -30,11 +30,13 @@ probabilistic programming language [Stan](https://mc-stan.org) by using the
 
 ## Features
   - Import annotation data from a `CSV` file with a preprocessing option
+  - Set inter-dependencies between questions to filter out irrelevant annotations
+  - Distinguish real classes for answers from reported labels (e.g., "Not answered")    
   - Calculate inter-rater reliability with different measures
   - Fit selected model to annotation data and compute the consensus 
   - Compute the consensus with a fixed pre-determined set of parameters
   - Fit the model parameters provided that the consensus is already known
-  - Given the parameters of a generative model (Multinomial, Dawid-Skene), sample annotations, tasks, 
+  - Given the parameters of a generative model (Multinomial, Dawid-Skene); sample annotations, tasks, 
   and workers (i.e., annotators)
   - Visualize the error-rate matrix for annotators 
   - Conduct predictive analysis of the accuracy vs. number of annotations for a given set of models
@@ -58,11 +60,11 @@ See the package [docs](https://mc-stan.org/cmdstanpy/installation.html) for  mor
 
 Use the package in the code:
 
-`import crowdnalysis`
+`>>> import crowdnalysis`
 
 Check available consensus models:
 
-`print(crowdnalysis.factory.Factory.list_registered_algorithms())`
+`>>> print(crowdnalysis.factory.Factory.list_registered_algorithms())`
 
 ## How to run unit tests
 
