@@ -1,6 +1,6 @@
 [![IIIA-CSIC](https://img.shields.io/badge/brewing%20at-IIIA--CSIC-blue)](https://iiia.csic.es)
 [![PyPI](https://img.shields.io/pypi/v/crowdnalysis)](https://pypi.org/project/crowdnalysis)
-[![codecov](https://codecov.io/gh/Crowd4SDG/crowdnalysis/branch/v2_refactoring/graph/badge.svg?token=JZ8BD8MZ9D)](https://codecov.io/gh/Crowd4SDG/crowdnalysis)
+[![codecov](https://codecov.io/gh/Crowd4SDG/crowdnalysis/branch/develop/graph/badge.svg?token=JZ8BD8MZ9D)](https://codecov.io/gh/Crowd4SDG/crowdnalysis)
 
 # crowdnalysis
  Crowdsourcing Citizen Science projects usually require citizens to classify items (images, pdfs, songs,&#8230;) 
@@ -18,7 +18,7 @@
   - Dawid-Skene
   
 In addition to the pure Python implementations above, the following models are implemented in the 
-probabilistic programming language [Stan](https://mc-stan.org) by using the 
+probabilistic programming language [Stan](https://mc-stan.org) and used via the 
 `CmdStanPy` [interface](https://mc-stan.org/cmdstanpy):
   - Multinomial
   - Multinomial Eta
