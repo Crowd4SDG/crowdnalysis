@@ -25,11 +25,12 @@ probabilistic programming language [Stan](https://mc-stan.org) and used via the
   - Dawid-Skene
   - Dawid-Skene Eta Hierarchical
 
-~ Eta models impose that the probability of the labels are higher for the real classes in the error-rate 
+~ Eta models impose that the probability of a reported label is higher for the real class in the error-rate 
 (a.k.a. confusion) matrix.
 
 ## Features
-  - Import annotation data from a `CSV` file with a preprocessing option
+
+  - Import annotation data from a `CSV` file with preprocessing option
   - Set inter-dependencies between questions to filter out irrelevant annotations
   - Distinguish real classes for answers from reported labels (e.g., "Not answered")    
   - Calculate inter-rater reliability with different measures
@@ -38,8 +39,8 @@ probabilistic programming language [Stan](https://mc-stan.org) and used via the
   - Fit the model parameters provided that the consensus is already known
   - Given the parameters of a generative model (Multinomial, Dawid-Skene); sample annotations, tasks, 
   and workers (i.e., annotators)
-  - Visualize the error-rate matrix for annotators 
-  - Conduct predictive analysis of the accuracy vs. number of annotations for a given set of models
+  - Conduct prospective analysis of the 'accuracy vs. number of annotations' for a given set of models
+  - Visualize the error-rate matrix for annotators
   - Visualize the consensus on annotated images in `HTML` format 
   
 
@@ -68,7 +69,7 @@ Check available consensus models:
 
 ## How to run unit tests
 
-We use [pytest](pytest.org) as the testing framework. Tests can be run by:
+We use [pytest](https://pytest.org) as the testing framework. Tests can be run by:
 
 `$ pytest`
 
@@ -92,6 +93,7 @@ European Union’s Horizon 2020 research and innovation programme under grant ag
 ## Reference
 For the details of the conceptual and mathematical model of crowdnalysis, see: 
 
-[1<a name="ref1"></a>] Cerquides, J.; Mülâyim, M.O.; Hernández-González, J.; Ravi Shankar, A.; Fernandez-Marquez, J.L. 
-_A Conceptual Probabilistic Framework for Annotation Aggregation of Citizen Science Data_. Mathematics 2021, 9, 875, 
+[1<a name="ref1"></a>] 
+Cerquides, J.; Mülâyim, M.O.; Hernández-González, J.; Ravi Shankar, A.; Fernandez-Marquez, J.L. 
+A Conceptual Probabilistic Framework for Annotation Aggregation of Citizen Science Data. *Mathematics* **2021**, 9, 875.
 [https://doi.org/10.3390/math9080875](https://doi.org/10.3390/math9080875)
