@@ -35,7 +35,7 @@ class BaseTestSimpleConsensusModel:
     # Class of the model to be tested; e.g. MajorityVoting
     model_cls: Type[AbstractSimpleConsensus] = None
     # A list of zero-argument sampling functions that return `SampleTest` objects
-    sampling_funcs: List[Callable] = []
+    sampling_funcs: List[Callable[[], SampleForTest]] = []
     # Absolute tolerance for the `numpy.allclose` function that may also be overridden, if need be
     ABSOLUTE_TOLERANCE = TOLERANCE
 
