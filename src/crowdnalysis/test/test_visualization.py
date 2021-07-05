@@ -1,6 +1,6 @@
 from html.parser import HTMLParser
 from unittest.mock import mock_open, patch
-# TODO (OM, 20210702): Replace unittest with pytest, if a solid way of mocking 'file write operations' is found for the latter.)
+# TODO (OM, 20210702): Replace unittest with pytest, if a solid way of mocking `builtins.open` is found for the latter.)
 
 import pandas as pd
 import pytest
@@ -14,7 +14,7 @@ question = TEST.QUESTIONS[0]
 picture_field = TEST.EXTRA_COL
 
 
-class MyHTMLParser(HTMLParser):
+class HTMLParserForTest(HTMLParser):
 
     def __init__(self):
         self.start_tags = []
@@ -26,6 +26,18 @@ class MyHTMLParser(HTMLParser):
 
     def handle_endtag(self, tag):
         self.end_tags.append(tag)
+
+
+def check_valid_html(html: str) -> HTMLParserForTest:
+    """Asserts if a given string is valid html"""
+    parser = HTMLParserForTest()
+    parser.feed(html)
+
+    assert (parser.start_tags[0].lower() == "html")
+    assert (parser.end_tags[-1].lower() == "html")
+    assert (sorted(parser.start_tags) == sorted(parser.end_tags))  # all tags are closed, valid XHTML
+
+    return parser
 
 
 @pytest.fixture(scope="module")
@@ -48,14 +60,7 @@ def test_html_description(fixt_consensus, fixt_data):
 
         # assert if the html content was written in file
         mocked_file().write.assert_called_once_with(html)
-
-    # Assert generated HTML is valid
-    parser = MyHTMLParser()
-    parser.feed(html)
-
-    assert (parser.start_tags[0].lower() == "html")
-    assert (parser.end_tags[-1].lower() == "html")
-    assert(sorted(parser.start_tags) == sorted(parser.end_tags))  # all tags are closed, valid XHTML
+    check_valid_html(html)
 
 
 def test_html_description_crossed(fixt_consensus, fixt_data):
@@ -73,15 +78,10 @@ def test_html_description_crossed(fixt_consensus, fixt_data):
         mocked_file().write.assert_called_once_with(html)
 
     # Assert generated HTML is valid
-    parser = MyHTMLParser()
-    parser.feed(html)
-
-    assert (parser.start_tags[0].lower() == "html")
-    assert (parser.end_tags[-1].lower() == "html")
-    assert(sorted(parser.start_tags) == sorted(parser.end_tags))
+    parser = check_valid_html(html)
 
     html2 = html_description(consensus=fixt_consensus, data=fixt_data, question=question, picture_field=picture_field)
-    parser2 = MyHTMLParser()
+    parser2 = HTMLParserForTest()
     parser2.feed(html2)
 
     assert(len(parser.start_tags) > len(parser2.start_tags))

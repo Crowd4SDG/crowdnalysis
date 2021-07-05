@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -8,9 +6,8 @@ from pandas.api.types import CategoricalDtype
 from ..data import Data
 
 
-
 class TEST:
-    TASK_IDS = [12, 10, 11]
+    TASK_IDS = [12, 10, 11, 13]  # Task 13 has no annotations
     TASK_KEYS = [f"t{i}" for i in TASK_IDS]
     TASK_RUN_IDS = [10, 11, 12, 11, 12, 11, 10, 10, 12, 10, 11, 12]
     USER_IDS = ["u2", "u0", "u1", "u1", "u2", "u2", "u0", "u1", "u0", "u3", "u3", "u3"]
