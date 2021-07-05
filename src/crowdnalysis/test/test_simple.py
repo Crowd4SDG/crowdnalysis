@@ -1,8 +1,7 @@
 import numpy as np
 
-from .common import SampleForTest, BaseTestSimpleConsensusModel
+from .common import BaseTestSimpleConsensusModel, SampleForTest
 from ..dawid_skene import DawidSkene
-from ..measures import Accuracy
 from ..simple import Probabilistic, MajorityVoting
 
 

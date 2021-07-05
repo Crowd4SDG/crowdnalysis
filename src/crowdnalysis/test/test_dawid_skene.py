@@ -1,6 +1,6 @@
 import numpy as np
 
-from .common import SampleForTest, BaseTestGenerativeConsensusModel
+from .common import BaseTestGenerativeConsensusModel, SampleForTest
 from ..dawid_skene import DawidSkene
 
 

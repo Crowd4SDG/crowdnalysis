@@ -1,7 +1,4 @@
-import numpy as np
-
-from .. import log
-from .common import SampleForTest, BaseTestGenerativeConsensusModel
+from .common import BaseTestGenerativeConsensusModel
 from ..cmdstan.dawid_skene import StanDSOptimizeConsensus, StanDSEtaHOptimizeConsensus
 
 from .test_dawid_skene import sample
