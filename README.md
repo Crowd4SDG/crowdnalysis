@@ -3,12 +3,14 @@
 [![codecov](https://codecov.io/gh/Crowd4SDG/crowdnalysis/branch/develop/graph/badge.svg?token=JZ8BD8MZ9D)](https://codecov.io/gh/Crowd4SDG/crowdnalysis)
 
 # crowdnalysis
- Crowdsourcing Citizen Science projects usually require citizens to classify items (images, pdfs, songs,&#8230;) 
- into one of a finite set of categories. Once an image is classified by different citizens, the different votes 
- need to be aggregated to obtain a consensus classification. Usually this is done by selecting the most voted category. 
- *crowdnalysis* allows Crowdsourcing Citizen Science projects to compute consensus that go beyond the selection of 
- the most voted category, by computing a model of quality for each of the citizen scientist involved in the project. 
- This more advanced consensus results in higher quality information for the Crowdsourcing Citizen Science project.
+Crowdsourcing Citizen Science projects usually require citizens to classify items (images, pdfs, songs, etc.) into 
+one of a finite set of categories. Once an image is annotated by contributing citizens, we need to aggregate these 
+annotations to obtain a consensus classification. Usually, the consensus for an item is achieved by selecting the 
+most voted category for the item. *crowdnalysis* allows computing consensus using more advanced techniques beyond the 
+standard majority voting. In particular, it provides consensus methods that model quality for each of the citizen 
+scientists involved in the project. This more advanced consensus results in higher quality information for the 
+Crowdsourcing Citizen Science project, an essential requirement as citizens are increasingly willing and able to 
+contribute to science.
 
 ## Implemented consensus algorithms
 
@@ -65,7 +67,7 @@ Use the package in the code:
 
 Check available consensus models:
 
-`>>> print(crowdnalysis.factory.Factory.list_registered_algorithms())`
+`>>> crowdnalysis.factory.Factory.list_registered_algorithms()`
 
 ## How to run unit tests
 
