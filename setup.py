@@ -34,7 +34,7 @@ def requirements() -> str:
 def get_version() -> str:
     version_file = open(os.path.join(HERE, PACKAGE_DIR, PACKAGE_NAME, "_version.py"))
     version_contents = version_file.read()
-    return re.search("__version__ = '(.*?)'", version_contents).group(1)
+    return re.search("__version__ = \"(.*?)\"", version_contents).group(1)
 
 
 setup(
