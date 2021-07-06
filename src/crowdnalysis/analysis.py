@@ -5,7 +5,7 @@ from typing import List
 import pandas as pd
 
 from .import data
-from .consensus import GenerativeAbstractConsensus
+from .consensus import AbstractSimpleConsensus, GenerativeAbstractConsensus
 
 
 def compute_crossed(model, d_others, ref_consensuses):
@@ -17,7 +17,7 @@ def compute_crossed(model, d_others, ref_consensuses):
         ref_consensuses (Dict[str, np.ndarray]): Dictionary of (question, consensus) key-value pairs
 
     Returns:
-        Dict[str, Dict[str, Dict[str, np.ndarray]]]: {data_source: {question: {_p: [...], _pi: [...]}}}
+        Dict[str, Dict[str, AbstractSimpleConsensus.Parameters]]: {data_source: {question: {_p: [...], _pi: [...]}}}
     """
     parameters_others = {}
     for d_name in d_others:
