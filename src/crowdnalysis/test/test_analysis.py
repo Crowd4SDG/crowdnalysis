@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from . import close
 from .conftest import TEST
 from .. import analysis, factory
 from ..measures import Accuracy
@@ -90,3 +91,17 @@ def test_compare_data_to_consensus(d_expert, d_others, expert_consensuses_n_para
             assert (df.shape[1] - 1 == len(d_other.get_classes(question)))
             # Total column == Sum(other columns)
             assert np.allclose(df.iloc[:, -1].to_numpy(), df.iloc[:, :-1].sum(axis=1).to_numpy())
+
+
+def test_gen_confusion_matrix(d_expert, expert_consensuses_n_parameters):
+    expert_consensuses, _ = expert_consensuses_n_parameters
+    for question in TEST.QUESTIONS:
+        df = analysis.gen_confusion_matrix(expert_consensuses[question], expert_consensuses[question],
+                                           d_expert, question)
+        # assert all categories are in the index and in the columns
+        categories = d_expert.get_categories()[question].categories.tolist()
+        assert df.index.to_list() == categories
+        assert df.columns.to_list() == categories
+        # assert dataframe total sum = # of tasks
+        assert close(np.nansum(df.to_numpy()), len(np.unique(d_expert.get_tasks(question))))
+        # TODO (OM, 20210716): assert the values of rows?

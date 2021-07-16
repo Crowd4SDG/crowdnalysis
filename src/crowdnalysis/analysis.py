@@ -2,6 +2,7 @@
 
 from typing import List
 
+import numpy as np
 import pandas as pd
 
 from .import data
@@ -40,6 +41,7 @@ def compare_data_to_consensus(d_base, d_compare, base_consensuses, question, add
     """
     consensus_col_labels = dict(zip(list(range(base_consensuses[question].shape[1])),
                                     d_base.get_categories()[question].categories.tolist()))
+    # print("consensus_col_labels:", consensus_col_labels)
     df_consensus = pd.DataFrame(base_consensuses[question]).rename(columns=consensus_col_labels)
     df_consensus[data.Data.COL_TASK_INDEX] = list(range(df_consensus.shape[0]))
     df_out = df_consensus.merge(d_compare.df[[question, data.Data.COL_TASK_INDEX]], how="right",
@@ -81,3 +83,22 @@ def prospective_analysis(question, expert_data_src, expert_parameters, parameter
     return pd.DataFrame.from_records(
         generative_model.evaluate_consensuses_on_linked_samples(
             expert_parameters[question], crowds_parameters, models, measures, dgps, repeats=repeats))
+
+
+def gen_confusion_matrix(consensus_ref: np.ndarray, consensus_compare: np.ndarray,
+                         d_ref: data.Data, question: str) -> pd.DataFrame:
+    """Compute confusion matrix for a consensus based on another ref consensus.
+
+    Cells values are the number of tasks. The values are merely the sum of probabilities for the corresponding
+    (class, label) pair.
+    """
+    best_ref = np.argmax(consensus_ref, axis=1)
+    categories = d_ref.get_categories()[question].categories.tolist()
+    label_names = dict(zip(range(len(categories)), categories))
+    # print("label_names:", label_names)
+    df_out = pd.DataFrame(consensus_compare).rename(columns=label_names)
+    df_out["Ground Truth"] = best_ref
+    df_out = df_out.groupby("Ground Truth").sum()
+    df_out = df_out.rename(index=label_names)
+    df_out = df_out.reindex(categories)  # In case there are labels which were not in `best_ref`
+    return df_out
