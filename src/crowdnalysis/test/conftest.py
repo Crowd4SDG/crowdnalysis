@@ -35,14 +35,6 @@ def fixt_df(fixt_single_file_records):
 
 
 @pytest.fixture(scope="session")
-def fixt_data(fixt_df) -> Data:
-    d = Data.from_df(fixt_df, data_src="test", questions=TEST.QUESTIONS, task_ids=TEST.TASK_IDS,
-                     categories=TEST.CATEGORIES, annotator_id_col_name=Data.COL_USER_ID)
-    # print("\n", d.df)
-    return d
-
-
-@pytest.fixture(scope="session")
 def fixt_data_factory(fixt_df):
     class DataFactory:
         @classmethod
@@ -52,3 +44,11 @@ def fixt_data_factory(fixt_df):
             # print("\n", d.df)
             return d
     return DataFactory
+
+
+@pytest.fixture(scope="session")
+def fixt_data(fixt_data_factory) -> Data:
+    d = fixt_data_factory.make()
+    # print("\n", d.df)
+    return d
+
