@@ -11,19 +11,18 @@ from ..measures import Accuracy
 
 
 @pytest.fixture(scope="module")
-def d_expert(fixt_data):  # see conftest.py
-    d = fixt_data
-    d.data_src = "test_expert"
+def d_expert(fixt_data_factory):  # see conftest.py
+    d = fixt_data_factory.make(data_src="test_expert")
     return d
 
 
 @pytest.fixture(scope="module")
-def d_others(fixt_data):
-    d_crowd = fixt_data
+def d_others(fixt_data_factory):
     d_others_ = {}
     for i in range(2):
-        d_crowd.data_src = f"test_crowd_{i}"
-        d_others_[d_crowd.data_src] = d_crowd
+        data_src = f"test_crowd_{i}"
+        d_others_[data_src] = fixt_data_factory.make(data_src=data_src)
+    # print([d.data_src for d in d_others_.values()])
     return d_others_
 
 
@@ -44,7 +43,6 @@ def parameters_others(expert_consensuses_n_parameters, d_others):
 
 def test_compute_crossed(expert_consensuses_n_parameters, parameters_others):
     _, expert_parameters = expert_consensuses_n_parameters
-
     for question, dgp in expert_parameters.items():
         expert_dgp = dataclasses.asdict(dgp)
         for param_name, expert_param_val in expert_dgp.items():
@@ -55,7 +53,6 @@ def test_compute_crossed(expert_consensuses_n_parameters, parameters_others):
 
 def test_prospective_analysis(d_expert, expert_consensuses_n_parameters, parameters_others):
     _, expert_parameters = expert_consensuses_n_parameters
-
     measures = {Accuracy.name: Accuracy}
     repeats = 2
     question = TEST.QUESTIONS[0]
@@ -66,16 +63,13 @@ def test_prospective_analysis(d_expert, expert_consensuses_n_parameters, paramet
     options = {"n_tasks": [10, 100],
                "n_annotations_per_task": [3, 9]}
     scenarios = ds.DataGenerationParameters.product_from_dict(options)
-
     df = analysis.prospective_analysis(question, d_expert.data_src, expert_parameters, parameters_others,
-                                       generative_model=model_,
-                                       models=models, measures=measures,
-                                       dgps=scenarios,
+                                       generative_model=model_, models=models, measures=measures, dgps=scenarios,
                                        repeats=repeats)
     # print(df)
     assert isinstance(df, pd.DataFrame)
     assert df.shape[0] == repeats * len(models) * len(options["n_tasks"]) * \
-           len(options["n_annotations_per_task"]) * len(parameters_others.keys())
+           len(options["n_annotations_per_task"]) * (len(parameters_others.keys()) + 1)  # +1 for experts
 
 
 def test_compare_data_to_consensus(d_expert, d_others, expert_consensuses_n_parameters):
@@ -84,6 +78,7 @@ def test_compare_data_to_consensus(d_expert, d_others, expert_consensuses_n_para
         for question in TEST.QUESTIONS:
             df = analysis.compare_data_to_consensus(d_expert, d_other, expert_consensuses, question,
                                                     add_total_cols=True)
+            # assert df is DataFrame
             assert isinstance(df, pd.DataFrame)
             # #Rows == #Labels
             assert df.shape[0] == d_other.n_labels(question)
@@ -98,6 +93,8 @@ def test_gen_confusion_matrix(d_expert, expert_consensuses_n_parameters):
     for question in TEST.QUESTIONS:
         df = analysis.gen_confusion_matrix(expert_consensuses[question], expert_consensuses[question],
                                            d_expert, question)
+        # assert df is DataFrame
+        assert isinstance(df, pd.DataFrame)
         # assert all categories are in the index and in the columns
         categories = d_expert.get_categories()[question].categories.tolist()
         assert df.index.to_list() == categories

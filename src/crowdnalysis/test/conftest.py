@@ -40,3 +40,15 @@ def fixt_data(fixt_df) -> Data:
                      categories=TEST.CATEGORIES, annotator_id_col_name=Data.COL_USER_ID)
     # print("\n", d.df)
     return d
+
+
+@pytest.fixture(scope="session")
+def fixt_data_factory(fixt_df):
+    class DataFactory:
+        @classmethod
+        def make(cls, data_src="test"):
+            d = Data.from_df(fixt_df, data_src=data_src, questions=TEST.QUESTIONS, task_ids=TEST.TASK_IDS,
+                             categories=TEST.CATEGORIES, annotator_id_col_name=Data.COL_USER_ID)
+            # print("\n", d.df)
+            return d
+    return DataFactory
