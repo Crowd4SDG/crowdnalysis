@@ -167,6 +167,8 @@ class Data:
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=None):
         if other_columns is None:
             other_columns = []
+        if questions is None:
+            questions = []
         df = df.copy()
         columns_to_retain = [cls.COL_TASK_ID, cls.COL_USER_ID] + questions + other_columns
         df = preprocess(df)

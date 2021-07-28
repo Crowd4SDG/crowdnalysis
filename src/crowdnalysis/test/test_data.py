@@ -51,16 +51,19 @@ def mock_single_file_csv(monkeypatch, fixt_df):
     monkeypatch.setattr(pd, "read_csv", mock_read, raising=True)
 
 
-def assert_data_object(d: Data):
+def assert_data_object(d: Data, other_columns=[TEST.EXTRA_COL]):
     """Helper for assertion of a created `Data` object"""
     # First assert the shape
-    asked_questions = set(d.df.columns).intersection(TEST.QUESTIONS)
+    # asked_questions = set(d.df.columns).intersection(TEST.QUESTIONS)
+    asked_questions = set(d.df.columns).intersection(d.questions)
+    if other_columns is None:
+        other_columns = []
     assert d.df.shape == (len(TEST.TASK_RUN_IDS),
-                          len([Data.COL_TASK_ID, Data.COL_USER_ID, *asked_questions, TEST.EXTRA_COL,
+                          len([Data.COL_TASK_ID, Data.COL_USER_ID, *asked_questions, *other_columns,
                                Data.COL_TASK_INDEX, Data.COL_WORKER_INDEX, *[Data.COL_QUESTION_INDEX(q)
                                                                              for q in asked_questions]]))
     # Assert task indices follow the order of the given TEST.TASK_IDS
-    assert np.array_equal(d.df[Data.COL_TASK_ID], [TEST.TASK_IDS[ix] for ix in d.df[Data.COL_TASK_INDEX]])
+    assert np.array_equal(d.df[Data.COL_TASK_ID], [d.task_ids[ix] for ix in d.df[Data.COL_TASK_INDEX]])
     # Assert annotator indices follow the order of the sorted unique TEST.USER_IDS
     assert np.array_equal(d.df[Data.COL_USER_ID], [np.unique(TEST.USER_IDS)[ix] for ix in d.df[Data.COL_WORKER_INDEX]])
     # Assert answer indices for a question follow the order of its given TEST.CATEGORIES
@@ -90,6 +93,22 @@ def test_from_pybossa(mock_pybossa_csv):
             other_columns=[TEST.EXTRA_COL])
     # print("\n", d.df)
     assert_data_object(d)
+
+    # Assert __init__ with None values
+    other_columns = None
+    d = Data.from_pybossa(
+        "task_run.csv",
+        questions=None,  # <--
+        data_src="test",
+        preprocess=lambda x: x,
+        task_ids=None,  # <--
+        categories=TEST.CATEGORIES,
+        task_info_file="task_info.csv",
+        task_file="task.csv",
+        field_task_key="task_key",
+        other_columns=None)  # <--
+    # print("\n", d.df)
+    assert_data_object(d, other_columns=None)
 
 
 def test_from_mturk(mock_single_file_csv):
@@ -163,6 +182,8 @@ def test_valid_rows(fixt_data):
     for q in TEST.QUESTIONS:
         fixt_data.set_condition(q, None)
         assert np.array_equal(fixt_data.valid_rows(q), fixt_data.df.index)
+    with pytest.raises(ValueError):
+        fixt_data.valid_rows("-".join(TEST.QUESTIONS))
 
 
 def test_set_condition(fixt_data):

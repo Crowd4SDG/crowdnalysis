@@ -1,10 +1,12 @@
+from dataclasses import dataclass
+
+import numpy as np
 import pytest
 from typing import Any, Dict
 
-import numpy as np
-
 from .. import log
 from ..consensus import DiscreteConsensusProblem
+from ..problems import JSONDataClass
 
 
 @pytest.fixture(scope="module")
@@ -89,7 +91,12 @@ def test_compute_n(dcp, manual_n, dcp_kwargs_2, manual_n2_filtered, manual_n2_un
     assert np.array_equal(filtered_tasks, np.array([0]))  # task 0 was filtered
 
 
-# TODO (OM, 20210512): Fill in below. Related method is never used.
-def test_product_from_dict():
-    pass
+def test_jsondataclass_product_from_dict():
+    @dataclass
+    class C(JSONDataClass):
+        a: int
+        b: int
+    options = {"a": [10, 100], "b": [3, 9]}
+    assert C.product_from_dict(options) == [C(10, 3), C(10, 9), C(100, 3), C(100, 9)]
+
 
