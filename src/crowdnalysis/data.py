@@ -177,13 +177,10 @@ class Data:
 
     @classmethod
     def _from_single_file(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None,
-                          categories=None,
-                          other_columns=None, delimiter=","):
+                          categories=None, other_columns=None, delimiter=","):
         """
         Create a Data object from a file.
         """
-        if other_columns is None:
-            other_columns = []
         df = pd.read_csv(file_name, delimiter=delimiter)
         # print("_from_single_file -> df columns before preprocessing: ", df.columns)
         df = cls._preprocess(df, questions, preprocess, other_columns)
@@ -209,8 +206,6 @@ class Data:
             # print("get_tasks {} {} ({}) -> \n{}".format("PyBossa", task_file, len(t_df.index), t_df))
             return t_df
 
-        if other_columns is None:
-            other_columns = []
         df = pd.read_csv(file_name, delimiter=delimiter)
         if task_info_file is not None:
             t_df = get_tasks(task_file, task_info_file, cls.COL_TASK_ID, field_task_key)
@@ -226,8 +221,6 @@ class Data:
     def from_mturk(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, categories=None,
                    other_columns=None, delimiter=","):
         """Create a Data object from an Amazon MTurk file."""
-        if other_columns is None:
-            other_columns = []
         return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, categories,
                                      other_columns=other_columns, delimiter=delimiter)
 
@@ -235,8 +228,6 @@ class Data:
     def from_aidr(cls, file_name, questions, data_src=None, preprocess=lambda x: x, task_ids=None, other_columns=None,
                   delimiter=","):
         """Create a Data object from an AIDR file."""
-        if other_columns is None:
-            other_columns = []
         # Note: Does NOT send 'categories' arg
         return cls._from_single_file(file_name, questions, data_src, preprocess, task_ids, other_columns=other_columns,
                                      delimiter=delimiter)
