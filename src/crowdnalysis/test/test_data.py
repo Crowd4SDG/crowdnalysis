@@ -147,13 +147,12 @@ def test_from_aidr(mock_single_file_csv):
     assert_data_object(d)
 
     # Assert __init__ with None values
-    d = Data.from_mturk(
+    d = Data.from_aidr(
         "aidr.csv",  # dummy value
         questions=None,  # <--
         data_src="test_aidr",
         preprocess=lambda x: x,
         task_ids=None,  # <--
-        categories=TEST.CATEGORIES,
         other_columns=None)  # <--
     assert_data_object(d, other_columns=None)
 
