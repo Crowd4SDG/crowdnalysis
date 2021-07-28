@@ -123,6 +123,17 @@ def test_from_mturk(mock_single_file_csv):
     # print("\n", d.df)
     assert_data_object(d)
 
+    # Assert __init__ with None values
+    d = Data.from_mturk(
+        "mturk_task.csv",  # dummy value
+        questions=None,  # <--
+        data_src="test",
+        preprocess=lambda x: x,
+        task_ids=None,  # <--
+        categories=TEST.CATEGORIES,
+        other_columns=None)  # <--
+    assert_data_object(d, other_columns=None)
+
 
 def test_from_aidr(mock_single_file_csv):
     d = Data.from_aidr(
@@ -134,6 +145,17 @@ def test_from_aidr(mock_single_file_csv):
         other_columns=[TEST.EXTRA_COL])
     # print("\n", d.df)
     assert_data_object(d)
+
+    # Assert __init__ with None values
+    d = Data.from_mturk(
+        "aidr.csv",  # dummy value
+        questions=None,  # <--
+        data_src="test_aidr",
+        preprocess=lambda x: x,
+        task_ids=None,  # <--
+        categories=TEST.CATEGORIES,
+        other_columns=None)  # <--
+    assert_data_object(d, other_columns=None)
 
 
 def test_get_categories(fixt_data):
