@@ -1,6 +1,6 @@
 import dataclasses
 from dataclasses import dataclass
-from typing import Callable, List, Tuple, Type
+from typing import Any, Callable, Dict, List, Tuple, Type
 
 import pytest
 import numpy as np
@@ -12,11 +12,15 @@ from ..measures import Accuracy, AllClose
 from ..problems import ConsensusProblem
 
 
+Kwargs = Dict[str, Any]
+
+
 @dataclass
 class SampleForTest:
     """Class for a sampling function's output"""
     problem: ConsensusProblem
     parameters: GenerativeAbstractConsensus.Parameters
+    kwargs: Kwargs = dataclasses.field(default_factory=dict)  # Intended for `fit_and_compute_consensus` only
 
 
 class BaseTestSimpleConsensusModel:
@@ -49,20 +53,21 @@ class BaseTestSimpleConsensusModel:
     @pytest.fixture(scope="class")
     def ref_consensus_params_problem(cls, samples) -> List[Tuple[np.ndarray,
                                                                  GenerativeAbstractConsensus.Parameters,
-                                                                 ConsensusProblem]]:
+                                                                 ConsensusProblem,
+                                                                 Kwargs]]:
         # print("In ref_consensus_params_problem for the model {}".format(cls.model_cls.name))
         model = cls.model_cls()
         list_ref = []
         for sample in samples:
             consensus_ref, parameters_ref = model.fit_and_compute_consensus(sample.problem)
-            list_ref.append((consensus_ref, parameters_ref, sample.problem))
+            list_ref.append((consensus_ref, parameters_ref, sample.problem, sample.kwargs))
         return list_ref
 
     @classmethod
     def _test_fit_and_compute_consensus(cls, sample: SampleForTest):
         model = cls.model_cls()
-        print(sample.problem)
-        consensus, parameters_learned = model.fit_and_compute_consensus(sample.problem)
+        # print(sample.problem)
+        consensus, parameters_learned = model.fit_and_compute_consensus(sample.problem, **sample.kwargs)
         # Assert consensus
         if cls.model_cls.__bases__[0] == AbstractSimpleConsensus:  # If this is only a simple consensus model
             assert Accuracy.evaluate(sample.problem.f_T, consensus) == 1.0
@@ -73,7 +78,6 @@ class BaseTestSimpleConsensusModel:
             dict_parameters_learned = dataclasses.asdict(parameters_learned)
             dict_sample_parameters = dataclasses.asdict(sample.parameters)
             for p in dict_sample_parameters.keys():
-                print(p, dict_sample_parameters[p], dict_parameters_learned[p])
                 log.debug("Distance between learned {p} and real {p}: {d:f}".format(
                     p=p, d=distance(dict_parameters_learned[p], dict_sample_parameters[p])))
                 assert close(dict_parameters_learned[p], dict_sample_parameters[p])
@@ -130,7 +134,7 @@ class BaseTestGenerativeConsensusModel(BaseTestSimpleConsensusModel):
         dict_parameters_learned = dataclasses.asdict(parameters_learned)
         dict_parameters_ref = dataclasses.asdict(parameters_ref)
         for p in dict_parameters_ref.keys():
-            print(p, dict_parameters_learned[p], dict_parameters_ref[p])
+            # print(p, dict_parameters_learned[p], dict_parameters_ref[p])
             log.debug("Distance between learned {p} and reference {p}: {d:f}".format(
                 p=p, d=distance(dict_parameters_learned[p], dict_parameters_ref[p])))
             assert close(dict_parameters_learned[p], dict_parameters_ref[p])
@@ -156,10 +160,10 @@ class BaseTestGenerativeConsensusModel(BaseTestSimpleConsensusModel):
 
     def test_fit(self, ref_consensus_params_problem):
         # print("In test_fit for the model {}".format(self.model_cls.name))
-        for consensus_ref, parameters_ref, problem in ref_consensus_params_problem:
+        for consensus_ref, parameters_ref, problem, _ in ref_consensus_params_problem:
             self._test_fit(consensus_ref, parameters_ref, problem)
 
     def test_compute_consensus(self, ref_consensus_params_problem):
         # print("In test_compute_consensus for the model {}".format(self.model_cls.name))
-        for consensus_ref, parameters_ref, problem in ref_consensus_params_problem:
+        for consensus_ref, parameters_ref, problem, _ in ref_consensus_params_problem:
             self._test_compute_consensus(consensus_ref, parameters_ref, problem)

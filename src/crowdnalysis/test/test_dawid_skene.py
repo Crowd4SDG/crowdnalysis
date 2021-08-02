@@ -1,6 +1,6 @@
 import numpy as np
 
-from .common import BaseTestGenerativeConsensusModel, SampleForTest
+from .common import BaseTestGenerativeConsensusModel, BaseTestSimpleConsensusModel, SampleForTest
 from ..dawid_skene import DawidSkene
 
 
@@ -15,6 +15,17 @@ def sample() -> SampleForTest:
     return SampleForTest(problem, parameters)
 
 
+def sample_w_kwargs() -> SampleForTest:
+    sample_ = sample()
+    return SampleForTest(sample_.problem, None, {"init_params": sample_.parameters})
+
+
 class TestDawidSkeneConsensus(BaseTestGenerativeConsensusModel):
     model_cls = DawidSkene
     sampling_funcs = [sample]
+
+
+class TestDawidSkeneConsensusSimple(BaseTestSimpleConsensusModel):
+    # Test `fit_and_compute_consensus` only with `init_params` arg
+    model_cls = DawidSkene
+    sampling_funcs = [sample_w_kwargs]
