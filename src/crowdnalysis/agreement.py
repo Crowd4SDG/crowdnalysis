@@ -48,6 +48,7 @@ def gen_fleiss_kappa(d: Data, question: str, w: np.ndarray = None) -> float:
     ref: Gwet KL. (2014) Handbook of Inter-Rater Reliability.
     """
     n, *_ = get_n_and_ranges(d, question)
+    # print("\nn:\n", n)
     kappa = _gen_fleiss_kappa(n, w)
     return kappa
 

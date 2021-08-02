@@ -68,8 +68,7 @@ class Data:
         np_task_ids = df[task_id_col_name].to_numpy()
         if task_ids is None:
             task_ids = np.unique(np_task_ids)
-        # t = np.unique(np_task_ids)
-        # print(t==task_ids)
+        # print(np.unique(np_task_ids)==task_ids)
         d.set_task_ids(task_ids)
         inverse = np.vectorize(d.task_index_from_id.get)(np_task_ids)
         df[cls.COL_TASK_INDEX] = inverse
@@ -123,14 +122,19 @@ class Data:
             del self.question_valid_rows[question]
         # else:  # silently ignore empty conditions
 
-    def valid_rows(self, question: str) -> pd.Index:
-        """Return the indices of the valid rows for the `question`.
+    def _assert_question(self, question: str) -> bool:
+        """Helper function
 
         Raises:
-            ValueError: If the `question` does not exist in data.
+            ValueError: If the `question` is not valid.
         """
         if question not in self.df.columns:
-            raise ValueError("{} is not a valid column in data.")
+            raise ValueError("{} is not a valid column in dataframe.".format(question))
+        return True
+
+    def valid_rows(self, question: str) -> pd.Index:
+        """Return the indices of the valid rows for the `question`."""
+        self._assert_question(question)
         if question in self.question_valid_rows:
             return self.question_valid_rows[question]
         else:
@@ -142,26 +146,26 @@ class Data:
         Raises:
             ValueError: If the `classes` is not a sublist of the `question`'s categories starting from index 0.
         """
-
-        if question in self.df.columns:
-            if classes is not None:
-                cat = self.df[question].dtype
-                if classes != cat.categories.tolist()[:len(classes)]:
-                    raise ValueError("Classes must be a sublist of the question's categories starting from index 0!")
-                self._question_classes[question] = [cat.categories.get_loc(x) for x in classes]
-            elif question in self._question_classes:
-                del self._question_classes[question]
+        self._assert_question(question)
+        if classes is not None:
+            cat = self.df[question].dtype
+            if classes != cat.categories.tolist()[:len(classes)]:
+                raise ValueError("Classes must be a sublist of the question's categories starting from index 0!")
+            self._question_classes[question] = [cat.categories.get_loc(x) for x in classes]
+        elif question in self._question_classes:
+            del self._question_classes[question]
+        # else:  # silently ignore already non-existing classes for `question`
 
     def get_classes(self, question: str) -> List[int]:
         """Return the `classes` for the `question`.
 
         Label indices are returned if `classes` are not explicitly set.
         """
-        if question in self.df.columns:
-            if question in self._question_classes:
-                return self._question_classes[question]
-            else:
-                return list(range(len(self.df[question].cat.categories)))
+        self._assert_question(question)
+        if question in self._question_classes:
+            return self._question_classes[question]
+        else:
+            return list(range(len(self.df[question].cat.categories)))
 
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=None):

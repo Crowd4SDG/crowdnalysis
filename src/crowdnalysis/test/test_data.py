@@ -200,11 +200,17 @@ def test_set_classes(fixt_data):
 
 
 def test_valid_rows(fixt_data):
+    # Assert a ValueError is raised if the question is not valid
+    with pytest.raises(ValueError):
+        fixt_data.valid_rows("-".join(TEST.QUESTIONS))
+    # Assert valid rows for non-empty condition
+    fixt_data.set_condition(TEST.QUESTIONS[1], "{}=='Yes'".format(TEST.QUESTIONS[0]))
+    yes_indices_0 = np.where(np.array(TEST.ANSWER_0) == "Yes")[0]
+    assert np.array_equal(yes_indices_0, fixt_data.valid_rows(TEST.QUESTIONS[1]))
+    # Assert valid rows for empty condition
     for q in TEST.QUESTIONS:
         fixt_data.set_condition(q, None)
         assert np.array_equal(fixt_data.valid_rows(q), fixt_data.df.index)
-    with pytest.raises(ValueError):
-        fixt_data.valid_rows("-".join(TEST.QUESTIONS))
 
 
 def test_set_condition(fixt_data):
