@@ -54,14 +54,14 @@ Install as a standard Python package:
 
 `$ pip install crowdnalysis`
 
-`CmdStanPy` will be installed as a dependency, however, this package requires the installation of the 
+`CmdStanPy` will be installed automatically as a dependency. However, this package requires the installation of the 
 `CmdStan` command-line interface too. 
 This can be done via executing the `install_cmdstan` utility that comes with `CmdStanPy`.
-See the package [docs](https://mc-stan.org/cmdstanpy/installation.html) for  more information.
+See related [docs](https://mc-stan.org/cmdstanpy/installation.html) for  more information.
 
 `$ install_cmdstan`
 
-Use the package in the code:
+Use the package in code:
 
 `>>> import crowdnalysis`
 
@@ -81,7 +81,7 @@ If you want to get the logs of the execution, do
 
 ## Logging 
 
-We use the standard `logging` library according to the rules [here](https://docs.python.org/3/howto/logging.html).
+We use the standard `logging` [library](https://docs.python.org/3/howto/logging.html).
 
 ## License
 
