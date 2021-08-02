@@ -8,6 +8,7 @@ exclude_lines =
     pragma: no cover
     raise NotImplementedError
     if __name__ == .__main__.:
+    log
 ignore_errors = True
 omit =
     src/crowdnalysis/test/*
