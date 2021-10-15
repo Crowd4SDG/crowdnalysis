@@ -56,10 +56,11 @@ Install as a standard Python package:
 
 `CmdStanPy` will be installed automatically as a dependency. However, this package requires the installation of the 
 `CmdStan` command-line interface too. 
-This can be done via executing the `install_cmdstan` utility that comes with `CmdStanPy`.
+This can be done via executing the `install_cmdstan` utility that comes with `CmdStanPy`. 
+Install the version `2.26.1` as this is the latest version we have tested crowdnalysis with.
 See related [docs](https://mc-stan.org/cmdstanpy/installation.html) for  more information.
 
-`$ install_cmdstan`
+`$ install_cmdstan -v 2.26.1`
 
 Use the package in code:
 
