@@ -184,25 +184,56 @@ def test_get_field(fixt_data):
                               np.unique(fixt_data.get_field(task_indices=task_indices, field=field, unique=True)))
 
 
+def test_assert_question(fixt_data):
+    # Assert a valid test question
+    assert fixt_data._assert_question(TEST.QUESTIONS[0])
+    # Assert a ValueError is raised if the question is not valid
+    with pytest.raises(ValueError):
+        fixt_data._assert_question("-".join(TEST.QUESTIONS))
+
+
+def test_get_classes(fixt_data):
+    for q in TEST.QUESTIONS:
+        classes_ = TEST.CATEGORIES[q].categories.tolist()
+        assert np.array_equal(fixt_data.get_classes(q), list(range(len(classes_))))
+        classes_.pop(-1)  # Suppose last item is not a class
+        fixt_data.set_classes(q, classes_)
+        assert np.array_equal(fixt_data.get_classes(q), list(range(len(classes_))))
+        # Reset the classes
+        fixt_data.set_classes(q, None)
+
+
+def test_get_class_ids(fixt_data):
+    for q in TEST.QUESTIONS:
+        assert np.array_equal(fixt_data.get_class_ids(q), TEST.CATEGORIES[q].categories)
+        classes_ = TEST.CATEGORIES[q].categories.tolist()
+        classes_.pop(-1)  # Suppose last item is not a class
+        fixt_data.set_classes(q, classes_)
+        assert np.array_equal(fixt_data.get_class_ids(q), classes_)
+        # Reset the classes
+        fixt_data.set_classes(q, None)
+
+
 def test_set_classes(fixt_data):
     for q in TEST.QUESTIONS:
         classes_ = TEST.CATEGORIES[q].categories.tolist()
         # Assert a ValueError is raised if the classes is not a sublist of the categories starting from index 0
         with pytest.raises(ValueError):
             fixt_data.set_classes(q, [classes_[0], classes_[-1]])
-        assert fixt_data.get_classes(q) == list(range(len(classes_)))
-        classes_.pop(-1)
+        classes_.pop(-1)  # Suppose last item is not a class
         fixt_data.set_classes(q, classes_)
         assert fixt_data.get_classes(q) == list(range(len(classes_)))
+        assert np.array_equal(fixt_data.get_class_ids(q),
+                              TEST.CATEGORIES[q].categories[fixt_data.get_classes(q)])
         # Reset the classes
         fixt_data.set_classes(q, None)
         assert fixt_data.get_classes(q) == list(range(len(TEST.CATEGORIES[q].categories.tolist())))
+        assert np.array_equal(fixt_data.get_class_ids(q), TEST.CATEGORIES[q].categories)
+        # Try to reset again without errors
+        fixt_data.set_classes(q, None)
 
 
 def test_valid_rows(fixt_data):
-    # Assert a ValueError is raised if the question is not valid
-    with pytest.raises(ValueError):
-        fixt_data.valid_rows("-".join(TEST.QUESTIONS))
     # Assert valid rows for non-empty condition
     fixt_data.set_condition(TEST.QUESTIONS[1], "{}=='Yes'".format(TEST.QUESTIONS[0]))
     yes_indices_0 = np.where(np.array(TEST.ANSWER_0) == "Yes")[0]
@@ -211,6 +242,15 @@ def test_valid_rows(fixt_data):
     for q in TEST.QUESTIONS:
         fixt_data.set_condition(q, None)
         assert np.array_equal(fixt_data.valid_rows(q), fixt_data.df.index)
+
+
+def test_valid_task_ids(fixt_data):
+    q = TEST.QUESTIONS[1]
+    fixt_data.set_condition(q, f"{TEST.QUESTIONS[0]} in ['Not sure']")
+    assert np.array_equal(fixt_data.valid_task_ids(q), [12, 10])  # Follows the order in `TEST.TASK_IDS`
+    # Clear the condition
+    fixt_data.set_condition(q, None)
+    assert np.array_equal(fixt_data.valid_task_ids(q), [12, 10, 11])  # Remember, task 13 has zero annotations
 
 
 def test_set_condition(fixt_data):
@@ -240,7 +280,7 @@ def test_get_others(fixt_data):
         assert np.array_equal(method_(q), fixt_data.df[col_name])
         fixt_data.set_condition(q, f"{TEST.QUESTIONS[0]} in ['Yes', 'Not sure']")
         assert np.array_equal(method_(q),
-                          [fixt_data.df[col_name][ix]
-                           for ix, val in enumerate(TEST.ANSWER_0) if val in ["Yes", "Not sure"]])
+                              [fixt_data.df[col_name][ix]
+                               for ix, val in enumerate(TEST.ANSWER_0) if val in ["Yes", "Not sure"]])
         # Clear the condition
         fixt_data.set_condition(q, None)

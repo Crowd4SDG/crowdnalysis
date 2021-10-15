@@ -2,12 +2,15 @@ from html.parser import HTMLParser
 from unittest.mock import mock_open, patch
 # TODO (OM, 20210702): Replace unittest with pytest, if a solid way of mocking `builtins.open` is found for the latter.
 
+import numpy as np
 import pandas as pd
 import pytest
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 from .conftest import TEST
 from ..factory import Factory
-from ..visualization import csv_description, html_description, html_description_crossed
+from ..visualization import consensus_as_df, csv_description, html_description, html_description_crossed, plot_confusion
 
 
 question = TEST.QUESTIONS[0]
@@ -45,6 +48,44 @@ def fixt_consensus(fixt_data):
     model = Factory.make("MajorityVoting")
     consensus, _ = model.fit_and_compute_consensus(fixt_data.get_dcp(question))
     return consensus
+
+
+def test_consensus_as_df(fixt_consensus, fixt_data):
+    df = consensus_as_df(fixt_data, question, fixt_consensus)
+    assert type(df) == pd.DataFrame
+    assert np.array_equal(df.index, fixt_data.valid_task_ids(question))
+    assert np.array_equal(df.columns, fixt_data.get_class_ids(question))
+
+
+def test_plot_confusion(monkeypatch, fixt_data):
+    model = Factory.make("DawidSkene")
+    _, params = model.fit_and_compute_consensus(fixt_data.get_dcp(question))
+
+    fig_saved = False
+
+    def mock_savefig(*args, **kwargs):
+        nonlocal fig_saved
+        fig_saved = True
+
+    def mock_plt(*args, **kwargs):
+        pass
+
+    # Mock used Matplotlib objects' methods
+    monkeypatch.setattr(Figure, "savefig", mock_savefig)
+    monkeypatch.setattr(plt, "show", mock_plt)
+    monkeypatch.setattr(plt, "close", mock_plt)
+    # Plot the matrix
+    classes_ = fixt_data.get_class_ids(question)
+    labels = fixt_data.get_categories()[question].categories.to_list()
+    mocked_file_path = "mock/file/path/mock.jpg"
+    ax = plot_confusion(conf_mtx=params.pi[0], classes=classes_, labels=labels, filename=mocked_file_path)
+    # Assert x and y axes values correspond to their given values
+    x_plot = [text_.get_text() for text_ in ax.get_xticklabels()]
+    y_plot = [text_.get_text() for text_ in ax.get_yticklabels()]
+    assert np.array_equal(x_plot, labels)
+    assert np.array_equal(y_plot, classes_)
+    # Assert the figure is saved
+    assert fig_saved
 
 
 def test_html_description(fixt_consensus, fixt_data):
