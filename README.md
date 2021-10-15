@@ -69,6 +69,9 @@ Check available consensus models:
 
 `>>> crowdnalysis.factory.Factory.list_registered_algorithms()`
 
+See the [tutorial](https://github.com/Crowd4SDG/crowdnalysis/blob/master/nb/tutorial.ipynb) notebook for the usage of 
+main features. 
+
 ## How to run unit tests
 
 We use [pytest](https://pytest.org) as the testing framework. Tests can be run by:
