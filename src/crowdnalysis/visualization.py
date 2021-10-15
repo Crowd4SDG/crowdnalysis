@@ -3,12 +3,70 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from dominate import document, tags, util
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 
 from .data import Data
+from .consensus import DiscreteConsensus
 
 
 IMG_ON_ERROR = "this.src='{}';".format("https://pbs.twimg.com/profile_images/1260593552515641345/j_TGePnL_400x400.jpg")
+
+
+def consensus_as_df(d: Data, question: str, consensus: DiscreteConsensus) -> pd.DataFrame:
+    """ Return the consensus as a DataFrame where indices are the `task_ids` and columns as real `classes`.
+
+    Args:
+        d: The annotation data
+        question: The question asked to the workers
+        consensus: Computed `consensus`  on the data for the `question`
+
+    Notes:
+        Assumes that the tasks with zero annotations (e.g. due to a condition set on the question) are excluded from the
+        `consensus`. see `Data.set_condition()`.
+    """
+    tasks = d.valid_task_ids(question)
+    classes = d.get_class_ids(question)
+    return pd.DataFrame(data=consensus, index=tasks, columns=classes)
+
+
+def plot_confusion(conf_mtx: np.ndarray, classes: np.ndarray, labels: np.ndarray, title: str = "Error-rate matrix",
+                   xlabel: str = "Reported Label", ylabel: str = "Real Class", filename: str = None,
+                   show_title: bool = True, fmt: str = ".2g") -> Axes:
+    """Plot the error-rate (confusion) matrix and optionally save it.
+
+    Args:
+        conf_mtx:  Error-rate matrix
+        classes: Real labels for the tasks
+        labels: Reported labels for the tasks
+        title: Tile of the plot
+        xlabel: x-axis label
+        ylabel: y-axis label
+        filename: A full file path. If given, the plot is saved into this file
+        show_title: If True, the title of the plot is displayed
+        fmt: String formatting for annotations used in `seaborn.heatmap`
+
+    Returns:
+        None.
+    """
+
+    df = pd.DataFrame(conf_mtx, index=classes, columns=labels)
+    ax = sns.heatmap(df, annot=True, fmt=fmt)
+    if show_title:
+        ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    for label in ax.xaxis.get_ticklabels():
+        label.set_horizontalalignment('center')
+    for label in ax.yaxis.get_ticklabels():
+        label.set_verticalalignment('center')
+    if filename is not None:
+        ax.get_figure().savefig(filename,  bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()
+    return ax
 
 
 def html_description(consensus: np.ndarray, data: Data, question: str, picture_field: str, width=120, height=90,
