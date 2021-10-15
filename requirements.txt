@@ -8,7 +8,7 @@ seaborn
 #pystan
 statsmodels
 dominate
-cmdstanpy
+cmdstanpy==0.9.76
 pytest
 numpyencoder
 flake8
