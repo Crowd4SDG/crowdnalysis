@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Union, Tuple, Callable
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -116,6 +116,7 @@ class Data:
             set_condition("info_3", "`info_0`==5 & `info_1`=='Yes' & `info_2` in ['Yes', True]")
 
         """
+        self._assert_question(question)
         if conditions:
             self.question_valid_rows[question] = self.df.query(conditions).index
         elif question in self.question_valid_rows:
@@ -133,12 +134,30 @@ class Data:
         return True
 
     def valid_rows(self, question: str) -> pd.Index:
-        """Return the indices of the valid rows for the `question`."""
+        """Return the indices of the valid rows for the `question`.
+
+        Raises:
+            ValueError: If the `question` is not valid.
+        """
         self._assert_question(question)
         if question in self.question_valid_rows:
             return self.question_valid_rows[question]
         else:
             return self.df.index
+
+    def valid_task_ids(self, question: str) -> np.ndarray:
+        """Return unique valid `task_ids` for a `question`.
+
+        IMPORTANT: Some tasks might be ruled out from the `data` after `set_condition()`. Consequently, these tasks will
+        be ruled out from the consensus computation too. Hence, the output tasks of this method correspond to the rows
+        of the consensus array.
+
+        Raises:
+            ValueError: If the `question` is not valid.
+        """
+        self._assert_question(question)
+        tasks_q = self.get_tasks(question)
+        return np.array(self.task_ids)[np.unique(tasks_q)]  # preserve the order in the task_ids
 
     def set_classes(self, question: str, classes: Optional[List[str]] = None):
         """Specify the `classes` for a `question` which may be different than the label options.
@@ -154,10 +173,11 @@ class Data:
             self._question_classes[question] = [cat.categories.get_loc(x) for x in classes]
         elif question in self._question_classes:
             del self._question_classes[question]
-        # else:  # silently ignore already non-existing classes for `question`
+        else:
+            pass  # silently ignore already non-existing classes for `question`
 
     def get_classes(self, question: str) -> List[int]:
-        """Return the `classes` for the `question`.
+        """Return the indices of `classes` for the `question`.
 
         Label indices are returned if `classes` are not explicitly set.
         """
@@ -166,6 +186,10 @@ class Data:
             return self._question_classes[question]
         else:
             return list(range(len(self.df[question].cat.categories)))
+
+    def get_class_ids(self, question: str) -> List[Any]:
+        """Return the ids of `classes` for the `question`"""
+        return self.get_categories()[question].categories[self.get_classes(question)].to_list()
 
     @classmethod
     def _preprocess(cls, df, questions, preprocess=lambda x: x, other_columns=None):
@@ -282,7 +306,7 @@ class Data:
     # df[question] = df[question].cat.codes
     #    return df.to_numpy()
 
-    def get_categories(self):
+    def get_categories(self) -> Dict:
         categories = {}
         for q in self.questions:
             # print(self.df[q].cat)
