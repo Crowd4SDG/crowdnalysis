@@ -136,6 +136,6 @@ class DiscreteConsensusProblem(ConsensusProblem):
             zero_annots = np.all(n_sum_w_A == 0, axis=1)
             if np.any(zero_annots):
                 n = n[:, ~zero_annots, :]
-                log.warning("{} tasks with zero annotations out of {} tasks in 'n' are eliminated.".format(
+                log.info("{} tasks with zero annotations out of {} tasks in 'n' are eliminated.".format(
                     np.sum(zero_annots), n_sum_w_A.shape[0]))
         return n, np.where(zero_annots)[0]
