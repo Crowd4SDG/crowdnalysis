@@ -1,6 +1,19 @@
-[![IIIA-CSIC](https://img.shields.io/badge/brewing%20at-IIIA--CSIC-blue)](https://iiia.csic.es)
-[![PyPI](https://img.shields.io/pypi/v/crowdnalysis)](https://pypi.org/project/crowdnalysis)
-[![codecov](https://codecov.io/gh/Crowd4SDG/crowdnalysis/branch/develop/graph/badge.svg?token=JZ8BD8MZ9D)](https://codecov.io/gh/Crowd4SDG/crowdnalysis)
+[![IIIA-CSIC][iiia-image]][iiia-url]
+[![GitHub -Actions][gha-image]][gha-url]
+[![pyversion][pyversion-image]][pyversion-url]
+[![PyPI][pypi-image]][pypi-url]
+[![codecov][codecov-image]][codecov-url]
+
+[iiia-image]: https://img.shields.io/badge/brewing%20at-IIIA--CSIC-blue
+[iiia-url]: https://iiia.csic.es
+[gha-image]: https://github.com/Crowd4SDG/crowdnalysis/actions/workflows/ci.yml/badge.svg
+[gha-url]: https://github.com/Crowd4SDG/crowdnalysis/actions/workflows/ci.yml
+[pypi-image]: https://img.shields.io/pypi/v/crowdnalysis
+[pypi-url]: https://pypi.org/project/crowdnalysis
+[pyversion-image]: https://img.shields.io/pypi/pyversions/crowdnalysis
+[pyversion-url]: https://pypi.org/project/crowdnalysis/
+[codecov-image]: https://codecov.io/gh/Crowd4SDG/crowdnalysis/branch/develop/graph/badge.svg?token=JZ8BD8MZ9D
+[codecov-url]: https://codecov.io/gh/Crowd4SDG/crowdnalysis
 
 # crowdnalysis
 Crowdsourcing Citizen Science projects usually require citizens to classify items (images, pdfs, songs, etc.) into 
@@ -57,7 +70,7 @@ Install as a standard Python package:
 `CmdStanPy` will be installed automatically as a dependency. However, this package requires the installation of the 
 `CmdStan` command-line interface too. 
 This can be done via executing the `install_cmdstan` utility that comes with `CmdStanPy`. 
-Install the version `2.26.1` as this is the latest version we have tested crowdnalysis with.
+We recommend installing the version `2.26.1` as this is the latest version we have tested crowdnalysis with.
 See related [docs](https://mc-stan.org/cmdstanpy/installation.html) for  more information.
 
 `$ install_cmdstan -v 2.26.1`
