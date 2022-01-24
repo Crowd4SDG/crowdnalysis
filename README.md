@@ -3,6 +3,7 @@
 [![pyversion][pyversion-image]][pyversion-url]
 [![PyPI][pypi-image]][pypi-url]
 [![codecov][codecov-image]][codecov-url]
+[![DOI][doi-image]][doi-url]
 
 [iiia-image]: https://img.shields.io/badge/brewing%20at-IIIA--CSIC-blue
 [iiia-url]: https://iiia.csic.es
@@ -14,6 +15,8 @@
 [pyversion-url]: https://pypi.org/project/crowdnalysis/
 [codecov-image]: https://codecov.io/gh/Crowd4SDG/crowdnalysis/branch/develop/graph/badge.svg?token=JZ8BD8MZ9D
 [codecov-url]: https://codecov.io/gh/Crowd4SDG/crowdnalysis
+[doi-image]: https://zenodo.org/badge/DOI/10.5281/zenodo.5898579.svg
+[doi-url]: https://doi.org/10.5281/zenodo.5898579
 
 # crowdnalysis
 Crowdsourcing Citizen Science projects usually require citizens to classify items (images, pdfs, songs, etc.) into 
@@ -103,6 +106,23 @@ We use the standard `logging` [library](https://docs.python.org/3/howto/logging.
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+## Citation
+
+If you find our software useful for your research, kindly consider citing it using the following `biblatex` entry with 
+the DOI attached to all versions:
+
+```tex
+@software{crowdnalysis2022,
+  author       = {Cerquides, Jesus and M{\"{u}}l{\^{a}}yim, Mehmet O{\u{g}}uz},
+  title        = {crowdnalysis: A software library to help analyze crowdsourcing results},
+  month        = jan,
+  year         = 2022,
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.5898579},
+  url          = {https://doi.org/10.5281/zenodo.5898579}
+}
+```
 
 ## Acknowledgements
 <img src="https://europa.eu/european-union/sites/europaeu/files/docs/body/flag_yellow_low.jpg" alt="" width="40"/> 
