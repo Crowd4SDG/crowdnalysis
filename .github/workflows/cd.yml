@@ -3,6 +3,8 @@ on:
   push:
     tags:
       - v*
+  release:
+    types: [ published ]
 jobs:
   build-n-publish:
     name: Build and publish Python 🐍 distribution 📦 to PyPI
