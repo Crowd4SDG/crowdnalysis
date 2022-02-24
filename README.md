@@ -130,9 +130,10 @@ The example is given for the version `v1.0.2`:
 __version__ = "1.0.2"  # Note no "v" prefix here.
 ```
 2. `git push` the changes to `origin` and make sure the remote `master` branch is up-to-date;
-3. Create a new `tag` preferably with annotation:
+3. Create a new `tag` preferably with (multiline) annotation:
 ```bash
-git tag -a v1.0.2 -m "Upgrade to CmdStanpy v1.0.2"
+git tag -a v1.0.2 -m "
+. Upgrade to CmdStanPy v1.0.2"
 ```
 4. Push the tag to `origin`:
 ```bash
