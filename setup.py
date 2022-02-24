@@ -25,7 +25,7 @@ HOMEPAGE = "https://github.com/Crowd4SDG/crowdnalysis"
 
 PROJECT_URLS = {
     "Tutorial": "https://github.com/Crowd4SDG/crowdnalysis/blob/master/nb/tutorial.ipynb",
-    "Bug Tracker": "https://github.com/Crowd4SDG/crowdnalysis/issues"
+    "Issue Tracker": "https://github.com/Crowd4SDG/crowdnalysis/issues"
 }
 
 KEYWORDS = "citizen-science crowdsourcing annotation-aggregation annotator-model prospective-analysis"
