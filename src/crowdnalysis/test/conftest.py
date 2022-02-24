@@ -1,3 +1,5 @@
+import atexit
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -52,3 +54,13 @@ def fixt_data(fixt_data_factory) -> Data:
     # print("\n", d.df)
     return d
 
+
+@pytest.fixture(scope='session', autouse=True)
+def cleanup_test_files():
+    """Fix to avoid logging error that pytest causes in CmdStanPy
+
+    # see https://github.com/stan-dev/cmdstanpy/pull/530
+    # see https://github.com/pytest-dev/pytest/issues/5502
+    """
+    import cmdstanpy
+    atexit.unregister(cmdstanpy._cleanup_tmpdir)

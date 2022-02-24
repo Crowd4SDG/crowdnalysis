@@ -97,9 +97,10 @@ Check available consensus models:
 See the [tutorial](https://github.com/Crowd4SDG/crowdnalysis/blob/master/nb/tutorial.ipynb) notebook for the usage of 
 main features. 
 
-## How to run unit tests
+## Unit tests
 
-We use [pytest](https://pytest.org) as the testing framework. Tests can be run&mdash;at the repo directory&mdash;by:
+We use [pytest](https://pytest.org) as the testing framework. Tests can be 
+run&mdash;at the cloned repo directory&mdash;by:
 
 ```bash
 pytest
@@ -117,24 +118,29 @@ We use the standard `logging` [library](https://docs.python.org/3/howto/logging.
 
 ## Deployment to PyPI
 
+<details>
+<summary>Note for contributors</summary>
+
 Follow these simple steps to have a new release automatically deployed to [PyPI](https://pypi.org/project/crowdnalysis/)
-by the [CD workflow](.github/workflows/cd.yml). The example is given for version `v1.0.1`:
+by the [CD workflow](https://github.com/Crowd4SDG/crowdnalysis/blob/master/.github/workflows/cd.yml).
+The example is given for the version `v1.0.2`:
 
 1. Update the version in `src/crowdnalysis/_version.py`:
 ```python
-__version__ = "1.0.1"  # Note no "v" prefix here.
+__version__ = "1.0.2"  # Note no "v" prefix here.
 ```
 2. `git push` the changes to `origin` and make sure the remote `master` branch is up-to-date;
 3. Create a new `tag` preferably with annotation:
 ```bash
-git tag -a v1.0.1 -m "New sections added to README"
+git tag -a v1.0.2 -m "Upgrade to CmdStanpy v1.0.2"
 ```
 4. Push the tag to `origin`:
 ```bash
-git push origin v1.0.1
+git push origin v1.0.2
 ```
 
 And shortly, the new version will be available on PyPI.
+</details>
 
 ## License
 
