@@ -133,7 +133,7 @@ __version__ = "1.0.2"  # Note no "v" prefix here.
 3. Create a new `tag` preferably with (multiline) annotation:
 ```bash
 git tag -a v1.0.2 -m "
-. Upgrade to CmdStanPy v1.0.2"
+. Upgrade to CmdStanPy v1.0.1"
 ```
 4. Push the tag to `origin`:
 ```bash
