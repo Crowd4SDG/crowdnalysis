@@ -13,7 +13,7 @@ generated quantities {
   // Generate tasks
   int <lower=1,upper=k> t_C[t];
   
-  for (_t in 1:t) {
-    t_C[_t] = categorical_rng(tau);
+  for (t_ in 1:t) {
+    t_C[t_] = categorical_rng(tau);
   }
 }

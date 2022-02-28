@@ -30,27 +30,27 @@ parameters {
 transformed parameters {
   vector[k] pi[w,k];
 
-  for (_w in 1:w)
-    pi[_w] = softmax_diag(eta[_w], dst);
+  for (w_ in 1:w)
+    pi[w_] = softmax_diag(eta[w_], dst);
 
   // print("pi",pi);
-  // log_p_t_C[_t][_k] is the log of the probability that t_C=_k for task _t 
+  // log_p_t_C[t_][k_] is the log of the probability that t_C=k_ for task t_
   vector[k] log_p_t_C[t];
   log_p_t_C = ds_log_p_t_C(tau, pi, t, t_A, w_A, ann);
 
   // Compute the probabilities from the logs (maybe this should move to generated quantities)
   vector[k] t_C[t]; //the true class distribution of each item
-  for(_t in 1:t)
-    t_C[_t] = softmax(log_p_t_C[_t]);
+  for(t_ in 1:t)
+    t_C[t_] = softmax(log_p_t_C[t_]);
 }
 
 
 model {
 
   // Prior over eta
-  // for (_w in 1:w) {
-  //   for(_k in 1:k) {
-  //     eta[_w,_k] ~ uniform(min_pi_prior[_k], max_pi_prior[_k]);
+  // for (w_ in 1:w) {
+  //   for(k_ in 1:k) {
+  //     eta[w_,k_] ~ uniform(min_pi_prior[k_], max_pi_prior[k_]);
   //   }
   // }
   
@@ -60,6 +60,6 @@ model {
   // Observation model
 
   // Summing over hidden var t_C
-  for (_t in 1:t)
-     target += log_sum_exp(log_p_t_C[_t]);
+  for (t_ in 1:t)
+     target += log_sum_exp(log_p_t_C[t_]);
 }

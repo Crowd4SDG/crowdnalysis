@@ -21,7 +21,7 @@ data {
 }
 
 transformed parameters {
-  // log_p_t_C[_t][_k] is the log of the probability that t_C=_k for task _t 
+  // log_p_t_C[t_][k_] is the log of the probability that t_C=k_ for task t_
   vector[k] log_p_t_C[t];
   vector[k] t_C[t]; //the true class distribution of each item
 
@@ -29,8 +29,8 @@ transformed parameters {
 
   // Compute the probabilities from the logs
 
-  for(_t in 1:t)
-    t_C[_t] = softmax(log_p_t_C[_t]);
+  for(t_ in 1:t)
+    t_C[t_] = softmax(log_p_t_C[t_]);
 
 }
 
@@ -38,6 +38,6 @@ transformed parameters {
 model {
 
   // Summing over hidden var t_C
-  for (_t in 1:t)
-     target += log_sum_exp(log_p_t_C[_t]);
+  for (t_ in 1:t)
+     target += log_sum_exp(log_p_t_C[t_]);
 }

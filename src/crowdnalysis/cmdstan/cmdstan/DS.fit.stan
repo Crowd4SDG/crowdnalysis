@@ -24,8 +24,8 @@ data {
 transformed data {
   vector[k] sum_t_C = rep_vector(0,k);
 
-  for (_t in 1:t)
-    sum_t_C += t_C[_t];
+  for (t_ in 1:t)
+    sum_t_C += t_C[t_];
 
 }
 
@@ -37,9 +37,9 @@ parameters {
 model {
 
   // Prior over pi
-  for(_w in 1:w) {
-    for(_k in 1:k) {
-      pi[_w,_k] ~ dirichlet(pi_prior[_k]);
+  for(w_ in 1:w) {
+    for(k_ in 1:k) {
+      pi[w_,k_] ~ dirichlet(pi_prior[k_]);
     }
   }
 
@@ -55,8 +55,8 @@ model {
 
         // Probability of each annotation
 
-        for (_a in 1:a)
-          target += dot_product(log_emission_t[w_A[_a],ann[_a]] , t_C[t_A[_a]]);
+        for (a_ in 1:a)
+          target += dot_product(log_emission_t[w_A[a_],ann[a_]] , t_C[t_A[a_]]);
   }
 }
 

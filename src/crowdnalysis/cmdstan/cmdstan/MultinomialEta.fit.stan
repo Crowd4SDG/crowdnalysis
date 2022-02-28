@@ -29,8 +29,8 @@ transformed data {
   dst = compute_movements(l, classes);
   vector[k] sum_t_C = rep_vector(0,k);
 
-  for (_t in 1:t)
-    sum_t_C += t_C[_t];
+  for (t_ in 1:t)
+    sum_t_C += t_C[t_];
 
 }
 
@@ -48,20 +48,20 @@ transformed parameters {
 
 model {
   // Prior over eta
-  for(_k in 1:k) {
-    eta[_k] ~ gamma(eta_alpha_prior[_k], eta_beta_prior[_k]);
+  for(k_ in 1:k) {
+    eta[k_] ~ gamma(eta_alpha_prior[k_], eta_beta_prior[k_]);
   }
 
   target += dot_product(sum_t_C, log(tau));
   {
         // Make the log and transpose the emission matrix
-        vector [k] log_emission_t[k];
+        vector [k] log_emission_t[l];
 
         log_emission_t = log_transpose(pi);
 
         // Probability of each annotation
 
-        for (_a in 1:a)
-          target += dot_product(log_emission_t[ann[_a]] , t_C[t_A[_a]]);
+        for (a_ in 1:a)
+          target += dot_product(log_emission_t[ann[a_]] , t_C[t_A[a_]]);
   }
 }

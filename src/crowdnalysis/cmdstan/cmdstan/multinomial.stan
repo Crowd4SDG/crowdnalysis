@@ -20,8 +20,8 @@ vector[] multinomial_log_p_t_C(vector tau, vector[] pi, int t, int[] t_A, int[] 
 
     // Update each task with the information contributed by its annotations
 
-    for (_a in 1:a)
-        log_p_t_C[t_A[_a]] += log_emission_t[ann[_a]];
+    for (a_ in 1:a)
+        log_p_t_C[t_A[a_]] += log_emission_t[ann[a_]];
 
     return log_p_t_C;
 }

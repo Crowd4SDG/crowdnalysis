@@ -39,7 +39,7 @@ transformed parameters {
   pi = softmax_diag(eta, classes, dst);
 
   // print("pi",pi);
-  // log_p_t_C[_t][_k] is the log of the probability that t_C=_k for task _t 
+  // log_p_t_C[t_][k_] is the log of the probability that t_C=k_ for task t_
   vector[k] log_p_t_C[t];
   vector[k] t_C[t]; //the true class distribution of each item
 
@@ -47,8 +47,8 @@ transformed parameters {
 
   // Compute the probabilities from the logs (maybe this should move to generated quantities)
 
-  for(_t in 1:t)
-    t_C[_t] = softmax(log_p_t_C[_t]);
+  for(t_ in 1:t)
+    t_C[t_] = softmax(log_p_t_C[t_]);
 
 }
 
@@ -56,8 +56,8 @@ transformed parameters {
 model {
 
   // Prior over eta
-  for(_k in 1:k) {
-    eta[_k] ~ gamma(eta_alpha_prior[_k], eta_beta_prior[_k]);
+  for(k_ in 1:k) {
+    eta[k_] ~ gamma(eta_alpha_prior[k_], eta_beta_prior[k_]);
   }
   
   // Prior over tau
@@ -66,6 +66,6 @@ model {
   // Observation model
 
   // Summing over hidden var t_C
-  for (_t in 1:t)
-     target += log_sum_exp(log_p_t_C[_t]);
+  for (t_ in 1:t)
+     target += log_sum_exp(log_p_t_C[t_]);
 }

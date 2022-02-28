@@ -4,8 +4,8 @@ vector[,] ds_log_transpose(vector[,] pi) {
     int k = size(pi[1]) / l;
 
     vector[k] log_pi_t[w,l];
-    for (_w in 1:w) {
-        log_pi_t[_w] = log_transpose(pi[_w]);
+    for (w_ in 1:w) {
+        log_pi_t[w_] = log_transpose(pi[w_]);
     }
     return log_pi_t;
 }
@@ -29,8 +29,8 @@ vector[] ds_log_p_t_C(vector tau, vector[,] pi, int t, int[] t_A, int[] w_A, int
 
     // Update each task with the information contributed by its annotations
 
-    for (_a in 1:a)
-        log_p_t_C[t_A[_a]] += log_emission_t[w_A[_a]][ann[_a]];
+    for (a_ in 1:a)
+        log_p_t_C[t_A[a_]] += log_emission_t[w_A[a_]][ann[a_]];
 
     return log_p_t_C;
 }

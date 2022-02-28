@@ -14,18 +14,19 @@ vector[] log_transpose(vector[] m) {
     int k = size(m);
     int l = size(m[1]);
     vector[k] log_m_t[l];
-    for (_real in 1:k)
-        for (_emitted in 1:l)
-            log_m_t[_emitted,_real] = log(m[_real,_emitted]);
+    for (real_ in 1:k)
+        for (emitted_ in 1:l)
+            log_m_t[emitted_,real_] = log(m[real_,emitted_]);
+    // print("log_transpose dims:", dims(log_m_t));
     return log_m_t;
 }
 
 vector[] bounded_log_transpose(vector[] m) {
     int k = size(m);
     vector[k] log_m_t[k];
-    for (_real in 1:k)
-        for (_emitted in 1:k)
-            log_m_t[_emitted,_real] = fmax(-100,log(m[_real,_emitted]));
+    for (real_ in 1:k)
+        for (emitted_ in 1:k)
+            log_m_t[emitted_,real_] = fmax(-100,log(m[real_,emitted_]));
     return log_m_t;
 }
 
@@ -46,8 +47,8 @@ vector[] bounded_log_transpose(vector[] m) {
 //    //vector[k] soft_tau = soften(tau, 0.01);
 //    //print("Soft tau:", soft_tau);
 //    //vector[k] soft_pi[k];
-//    //for (_k in 1:k) {
-//    //    soft_pi[_k] = soften(pi[_k], 0.1);
+//    //for (k_ in 1:k) {
+//    //    soft_pi[k_] = soften(pi[k_], 0.1);
 //    //}
 //    //print("Soft pi:", soft_pi);
 //
@@ -63,8 +64,8 @@ vector[] bounded_log_transpose(vector[] m) {
 //
 //    // Update each task with the information contributed by its annotations
 //
-//    for (_a in 1:a)
-//        log_p_t_C[t_A[_a]] += log_emission_t[ann[_a]];
+//    for (a_ in 1:a)
+//        log_p_t_C[t_A[a_]] += log_emission_t[ann[a_]];
 //
 //    return log_p_t_C;
 //}
@@ -73,8 +74,8 @@ vector[] bounded_log_transpose(vector[] m) {
 //matrix log_transpose_m( matrix m) {
 //   int k = size(m);
 //    matrix log_m_t[k,k];
-//    for (_real in 1:k)
-//        for (_emitted in 1:k)
-//            log_m_t[_emitted,_real] = log(m[_real,_emitted]);
+//    for (real_ in 1:k)
+//        for (emitted_ in 1:k)
+//            log_m_t[emitted_,real_] = log(m[real_,emitted_]);
 //    return log_m_t;
 //}

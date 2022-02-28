@@ -26,13 +26,13 @@ generated quantities {
   int<lower=1,upper=t> t_A[a]; // the item the n-th annotation belongs to
   int<lower=1,upper=w> w_A[a]; // the annotator which produced the n-th annotation
   int<lower=1,upper=l> ann[a]; // the annotation
-  for (_t in 1:t) {
-      for (_i in 1:n_annotations_per_task) {
-        int _a;
-        _a = (_t-1) * n_annotations_per_task + _i;
-        t_A[_a] = _t;
-        w_A[_a] = categorical_rng(rep_vector(1.0/w,w));
-        ann[_a] = categorical_rng(pi[t_C[t_A[_a]]]);
+  for (t_ in 1:t) {
+      for (i_ in 1:n_annotations_per_task) {
+        int a_;
+        a_ = (t_-1) * n_annotations_per_task + i_;
+        t_A[a_] = t_;
+        w_A[a_] = categorical_rng(rep_vector(1.0/w,w));
+        ann[a_] = categorical_rng(pi[t_C[t_A[a_]]]);
       }
   }
 }
