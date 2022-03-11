@@ -165,8 +165,8 @@ the DOI attached to all versions:
 
 ## Acknowledgements
 <img src="https://publications.europa.eu/code/images/scan/5000200-flag-cl.jpg" alt="" width="30"/> 
-crowdnalysis is being developed within the <a href="https://crowd4sdg.eu/">Crowd4SDG</a> project funded by the 
-European Union’s Horizon 2020 research and innovation programme under grant agreement No. 872944. 
+crowdnalysis is being developed within the <a href="https://crowd4sdg.eu/">Crowd4SDG</a> and Humane-AI-net projects funded by the 
+European Union’s Horizon 2020 research and innovation programme under grant agreements No. 872944 and No. 952026. 
 
 ## Reference
 For the details of the conceptual and mathematical model of crowdnalysis, see: 
