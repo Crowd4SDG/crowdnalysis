@@ -151,7 +151,7 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 If you find our software useful for your research, kindly consider citing it using the following `biblatex` entry with 
 the DOI attached to all versions:
 
-```tex
+```bibtex
 @software{crowdnalysis2022,
   author       = {Cerquides, Jesus and M{\"{u}}l{\^{a}}yim, Mehmet O{\u{g}}uz},
   title        = {crowdnalysis: A software library to help analyze crowdsourcing results},
@@ -164,8 +164,9 @@ the DOI attached to all versions:
 ```
 
 ## Acknowledgements
-<img src="https://publications.europa.eu/code/images/scan/5000200-flag-cl.jpg" alt="" width="30"/> 
-crowdnalysis is being developed within the <a href="https://crowd4sdg.eu/">Crowd4SDG</a> and Humane-AI-net projects funded by the 
+<img src="https://publications.europa.eu/code/images/scan/5000200-flag-cl.jpg" alt="" width="30"></img> 
+crowdnalysis is being developed within the [Crowd4SDG](https://crowd4sdg.eu/) and 
+[Humane-AI-net](https://www.humane-ai.eu/) projects funded by the 
 European Union’s Horizon 2020 research and innovation programme under grant agreements No. 872944 and No. 952026. 
 
 ## Reference
