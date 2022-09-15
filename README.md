@@ -55,6 +55,7 @@ probabilistic programming language [Stan](https://mc-stan.org) and used via the
   - Fit selected model to annotation data and compute the consensus 
   - Compute the consensus with a fixed pre-determined set of parameters
   - Fit the model parameters provided that the consensus is already known
+  - Generate the confusion matrix between a consensus and the ground truth
   - Given the parameters of a generative model (Multinomial, Dawid-Skene); sample annotations, tasks, 
   and workers (i.e., annotators)
   - Conduct prospective analysis of the 'accuracy vs. number of annotations' for a given set of models
@@ -93,7 +94,7 @@ Check available consensus models:
 >>> crowdnalysis.factory.Factory.list_registered_algorithms()
 ```
 
-See the [tutorial](https://github.com/Crowd4SDG/crowdnalysis/blob/master/nb/tutorial.ipynb) notebook for the usage of 
+See the [TUTORIAL](https://github.com/Crowd4SDG/crowdnalysis/blob/master/nb/tutorial.ipynb) notebook for the usage of 
 main features. 
 
 ## Unit tests
