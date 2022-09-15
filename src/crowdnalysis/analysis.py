@@ -85,18 +85,41 @@ def prospective_analysis(question, expert_data_src, expert_parameters, parameter
             expert_parameters[question], crowds_parameters, models, measures, dgps, repeats=repeats))
 
 
-def gen_confusion_matrix(consensus_ref: np.ndarray, consensus_compare: np.ndarray,
-                         d_ref: data.Data, question: str) -> pd.DataFrame:
-    """Compute confusion matrix for a consensus based on another ref consensus.
+def gen_confusion_matrix_prob(consensus_ref: np.ndarray, consensus_compare: np.ndarray,
+                              d_ref: data.Data, question: str) -> pd.DataFrame:
+    """Compute confusion matrix for a consensus based on a ref consensus as the sum of probabilities for classes.
 
     Cells values are the number of tasks. The values are merely the sum of probabilities for the corresponding
-    (class, label) pair.
+    (class, label) pair. That's why we observe decimals.
     """
     best_ref = np.argmax(consensus_ref, axis=1)
     categories = d_ref.get_categories()[question].categories.tolist()
     label_names = dict(zip(range(len(categories)), categories))
     # print("label_names:", label_names)
     df_out = pd.DataFrame(consensus_compare).rename(columns=label_names)
+    df_out["Ground Truth"] = best_ref
+    df_out = df_out.groupby("Ground Truth").sum()
+    df_out = df_out.rename(index=label_names)
+    df_out = df_out.reindex(categories)  # In case there are labels which were not in `best_ref`
+    return df_out
+
+
+def gen_confusion_matrix(consensus_ref: np.ndarray, consensus_compare: np.ndarray,
+                         d_ref: data.Data, question: str) -> pd.DataFrame:
+    """Compute confusion matrix for a consensus based on a ref consensus.
+
+    Cells values are the number of tasks. The consensus label for a task is the class with the highest probability.
+    """
+    best_ref = np.argmax(consensus_ref, axis=1)
+    categories = d_ref.get_categories()[question].categories.tolist()
+    label_names = dict(zip(range(len(categories)), categories))
+    # print("label_names:", label_names)
+    # Set the highest-valued cell to 1 and others to 0.
+    consensus_compare_bool = np.zeros_like(consensus_compare)
+    consensus_compare_bool[np.arange(len(consensus_compare)), consensus_compare.argmax(axis=1)] = 1
+    df_out = pd.DataFrame(consensus_compare_bool).astype(int)
+    # Create the confusion matrix
+    df_out = df_out.rename(columns=label_names)
     df_out["Ground Truth"] = best_ref
     df_out = df_out.groupby("Ground Truth").sum()
     df_out = df_out.rename(index=label_names)

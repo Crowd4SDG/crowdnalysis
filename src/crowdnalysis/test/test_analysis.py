@@ -100,5 +100,5 @@ def test_gen_confusion_matrix(d_expert, expert_consensuses_n_parameters):
         assert df.index.to_list() == categories
         assert df.columns.to_list() == categories
         # assert dataframe total sum = # of tasks
-        assert close(np.nansum(df.to_numpy()), len(np.unique(d_expert.get_tasks(question))))
+        assert np.nansum(df.to_numpy()) == len(np.unique(d_expert.get_tasks(question)))
         # TODO (OM, 20210716): assert the values of rows?
